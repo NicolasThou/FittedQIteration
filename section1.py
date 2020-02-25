@@ -4,7 +4,7 @@ U = np.array([-4, 4])  # action space
 m = 1
 g = 9.81
 gamma = 0.95
-delta_t = 0.001
+delta_t = 0.001  # integration
 
 """
 def r(p, s, u):
@@ -19,7 +19,7 @@ def r(p, s, u):
     ======
     return an integer
     
-    next_state = f(p, s, u) # use of the dynamic of the problem
+    next_state = f(x, u) # use of the dynamic of the problem
     p_suivant = next_state[0]
     s_suivant = next_state[1]
     if p_suivant < -1 or np.abs(s_suivant) > 3:
@@ -111,6 +111,14 @@ def is_final_state(p, s):
         return True
     else:
         return False
+
+
+def random_policy():
+    """
+    return, in a randomly way, 4 or -4
+    """
+    power = np.random.random_integers(0, 1)
+    return ((-1) ** power) * 4
 
 
 if __name__ == '__main__':
