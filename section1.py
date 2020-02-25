@@ -177,13 +177,11 @@ def simulation_section2():
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
-    print('Here the initial state')
     print(state)
     for i in range(50):
         action = random_policy()  # use a random policy
         state = f(state, action)  # use the dynamic of the domain
         print(state)
-        print(i)
         if is_final_state(state) == True:
             print('Nous avons atteint un état finale')
             return None
@@ -194,7 +192,6 @@ def simulation_section2_2():
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
-    print('Here the initial state')
     print(state)
     action = -4  # we begin with an acceleration
     for i in range(50):
@@ -208,6 +205,11 @@ def simulation_section2_2():
 if __name__ == '__main__':
     assert is_final_state(np.array([-2, 0]))
     assert is_final_state(np.array([0, 5]))
-    
-    simulation_section2_2()  # if we change between accelerate and slow down each time, we won't reach a final state
-    simulation_section2()  # if we accelerate two times, the car is too fast, so we reach a final state
+    print()
+    print('Use of alternativ policy')
+    print('If we change between accelerate and slow down each time, we won\'t reach a final state')
+    simulation_section2_2()
+    print()
+    print('Use of random policy')
+    print('If we accelerate two times, the car is too fast, so we reach a final state')
+    simulation_section2()
