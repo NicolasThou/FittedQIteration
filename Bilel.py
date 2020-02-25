@@ -36,5 +36,24 @@ def random_policy():
     return ((-1)**power)*4
 
 
+def euler_positive(p, s, u):
+    new_p = p
+    new_s = s
+    for i in range(1000):
+        new
+
+
+def f(x, u):
+    p, s = x
+    if p < 0:
+        new_p, new_s = euler_positive(p, s, u)
+    else:
+        new_p, new_s = euler_negative(p, s, u)
+
+    return new_p, new_s
+
+
+
+
 if __name__ == '__main__':
     print('Hello World !')

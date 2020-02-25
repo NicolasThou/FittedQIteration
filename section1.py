@@ -4,7 +4,8 @@ U = np.array([-4, 4])  # action space
 m = 1
 g = 9.81
 gamma = 0.95
-delta_t = 0.001  # integration
+delta_t = 0.001  # discretization time
+integration_step = 0.001  # euler method step
 
 """
 def r(p, s, u):
