@@ -180,6 +180,7 @@ def simulation_section2():
     print(state)
     for i in range(50):
         action = random_policy()  # use a random policy
+        print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
         if is_final_state(state) == True:
