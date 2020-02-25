@@ -33,7 +33,7 @@ def f(x, u):
         new_p += integration_step * temp_s
         new_s += integration_step * g(temp_p, temp_s, u)
 
-    return new_p, new_s
+    return np.array([new_p, new_s])
 
 
 def r(x, u):
@@ -69,7 +69,7 @@ def initial_state():
     ======
     The state [p0, s0] which is an array
     """
-    p0 = (np.random.randint(-1, 1)) / 10
+    p0 = np.random.uniform(-0.1, 0.1)
     s0 = 0
     return np.array([p0, s0])
 
@@ -171,6 +171,7 @@ def simulation_section2():
     print(state)
     for i in range(50):
         action = random_policy()  # use a random policy
+        print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
         if is_final_state(state[0], state[1]) == True:
