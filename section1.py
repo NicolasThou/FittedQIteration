@@ -3,6 +3,8 @@ import numpy as np
 U = np.array([-4, 4])  # action space
 m = 1
 g = 9.81
+gamma = 0.95
+delta_t = 0.001
 
 """
 def r(p, s, u):
