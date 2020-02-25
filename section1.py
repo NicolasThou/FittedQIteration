@@ -46,5 +46,72 @@ def initial_state():
     return np.array([p0, s0])
 
 
+def derivee_seconde_p_inf_0(p, s, u):
+    """
+    Computes the second derivative of p for p<0
+
+    Argument:
+    ========
+    p is the position
+    s the speed
+    u the action
+
+    return:
+    ======
+    return the value of p"
+    """
+    # recurrent term contracted
+    k = 2 * p + 1
+
+    a = (u - k * (m * g * s + 2 * (s ** 5)) / (m * (1 + (s ** 3) * (k ** 2))))
+    b = 1 + ((s ** 3) * (k ** 2) / (1 + (s ** 2) * (k ** 2)))
+    if b == 0:
+        # error to handle in the future
+        print('Denominator equal zero !!')
+        return None
+    else:
+        return a / b
+
+
+def derivee_seconde_p_sup_equal_0(p, s, u):
+    """
+    derivative 2th of p when p >= 0
+
+    Argument:
+    ========
+    p is the position
+    s the speed
+    u the action
+
+    return:
+    ======
+    return the value of p"
+    """
+    denominateur_commun = 1 + ((s ** 2) / (1 + 5 * (p ** 2))) * ((1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2)))) ** 2)
+    numerateur1 = u / m
+    numerateur2 = g * (s / (np.sqrt(1 + 5 * (p ** 2)))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))
+    numerateur3 = ((15 * (s ** 5) * p) / (1 + 5 * (p ** 2))) * (
+            ((1 / (np.sqrt((1 + 5 * (p ** 2))))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))) ** 2)
+    denominateur_commun2 = 1 + (
+            ((1 / (np.sqrt((1 + 5 * (p ** 2))))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))) ** 2) * (s ** 3)
+
+    if denominateur_commun == 0 or denominateur_commun2 == 0:
+        # error to handle in the future
+        print('Denominator equal zero !!')
+        return None
+
+    return ((numerateur1 + numerateur2 + numerateur3) / denominateur_commun) / denominateur_commun2
+
+
+def is_final_state(p, s):
+    """
+    Check whether the system is in a final state or not
+    """
+    if abs(p) > 1 or abs(s) > 3:
+        return True
+    else:
+        return False
+
+
 if __name__ == '__main__':
     print('Hello World !')
