@@ -91,7 +91,7 @@ def derivee_seconde_p_inf_0(p, s, u):
     # recurrent term contracted
     k = 2 * p + 1
 
-    a = (u - k * (m * g * s + 2 * (s ** 5)) / (m * (1 + (s ** 3) * (k ** 2))))
+    a = (u - k * (m * g * s + 2 * m * (s ** 5)) / (m * (1 + (s ** 3) * (k ** 2))))
     b = 1 + ((s ** 3) * (k ** 2) / (1 + (s ** 2) * (k ** 2)))
     if b == 0:
         # error to handle in the future
@@ -131,7 +131,7 @@ def derivee_seconde_p_sup_equal_0(p, s, u):
     return ((numerateur1 + numerateur2 + numerateur3) / denominateur_commun) / denominateur_commun2
 
 
-def is_final_state(p, s):
+def is_final_state(x):
     """
     Check whether the system is in a final state or not
 
@@ -144,6 +144,7 @@ def is_final_state(p, s):
     ======
     return a boolean
     """
+    p, s = x
     if abs(p) > 1 or abs(s) > 3:
         return True
     else:
@@ -174,10 +175,13 @@ def simulation_section2():
         print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
-        if is_final_state(state[0], state[1]) == True:
+        if is_final_state(state) == True:
             print('Nous avons atteint un état finale')
             return None
 
 
 if __name__ == '__main__':
+    assert is_final_state(np.array([-2, 0]))
+    assert is_final_state(np.array([0, 5]))
+    
     simulation_section2()
