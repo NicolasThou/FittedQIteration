@@ -121,6 +121,17 @@ def random_policy():
     power = np.random.random_integers(0, 1)
     return ((-1) ** power) * 4
 
+def simulation_section2():
+    """
+    Simulate the policy in the domain from an initial state and display the trajectory
+    """
+    state = initial_state()
+    print('Here the initial state')
+    print(state)
+    for i in range(50):
+        action = random_policy()  # use a random policy
+        state = f(state, action)  # use the dynamic of the domain
+        print(state)
 
 if __name__ == '__main__':
     print('Hello World !')
