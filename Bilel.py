@@ -36,23 +36,53 @@ def random_policy():
     return ((-1)**power)*4
 
 
-def euler_positive(p, s, u):
+def euler(p, s, u):
     new_p = p
     new_s = s
-    for i in range(1000):
-        new
 
-
-def f(x, u):
-    p, s = x
     if p < 0:
-        new_p, new_s = euler_positive(p, s, u)
+        f = lambda f_p, f_s, f_u : derivee_seconde_p_inf_0(f_p, f_s, f_u)
     else:
-        new_p, new_s = euler_negative(p, s, u)
+        f = lambda f_p, f_s, f_u : derivee_seconde_p_sup_equal_0(f_p, f_s, f_u)
+
+# euler method with 1000 step
+    for i in range(1000):
+        temp_p = new_p
+        temp_s = new_s
+
+        # we use the values of the previous step, not the new ones !!
+        new_p += integration_step*temp_s
+        new_s += integration_step*f(temp_p, temp_s, u)
 
     return new_p, new_s
 
 
+def f(x, u):
+    """
+    dynamic of the system
+    """
+
+    # initialization
+    p, s = x
+    new_p = p
+    new_s = s
+
+    # check which Hill function to use
+    if p < 0:
+        f = lambda f_p, f_s, f_u: derivee_seconde_p_inf_0(f_p, f_s, f_u)
+    else:
+        f = lambda f_p, f_s, f_u: derivee_seconde_p_sup_equal_0(f_p, f_s, f_u)
+
+    # euler method with 1000 step
+    for i in range(1000):
+        temp_p = new_p
+        temp_s = new_s
+
+        # we use the values of the previous step, not the new ones !!
+        new_p += integration_step * temp_s
+        new_s += integration_step * f(temp_p, temp_s, u)
+
+    return new_p, new_s
 
 
 if __name__ == '__main__':
