@@ -1,5 +1,5 @@
-import numpy as np
 from section1 import *
+
 
 def d2pdt(p, s, u):
     """
@@ -16,6 +16,16 @@ def d2pdt(p, s, u):
         return None
     else:
         return a/b
+
+
+def is_final_state(p, s):
+    """
+    Check whether the system is in a final state or not
+    """
+    if abs(p) > 1 or abs(s) > 3:
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':
