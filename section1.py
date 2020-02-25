@@ -213,3 +213,5 @@ if __name__ == '__main__':
     print('Use of random policy')
     print('If we accelerate two times, the car is too fast, so we reach a final state')
     simulation_section2()
+
+    print("test")
