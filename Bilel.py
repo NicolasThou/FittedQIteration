@@ -1,5 +1,5 @@
 from section1 import *
-
+import numpy as np
 
 def d2pdt(p, s, u):
     """
@@ -26,6 +26,14 @@ def is_final_state(p, s):
         return True
     else:
         return False
+
+
+def random_policy():
+    """
+    return, in a randomly way, 4 or -4
+    """
+    power = np.random.random_integers(0, 1)
+    return ((-1)**power)*4
 
 
 if __name__ == '__main__':
