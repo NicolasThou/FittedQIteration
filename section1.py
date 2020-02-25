@@ -107,6 +107,15 @@ def derivee_seconde_p_sup_equal_0(p, s, u):
 def is_final_state(p, s):
     """
     Check whether the system is in a final state or not
+
+    Argument:
+    =======
+    p the position
+    s the speed
+
+    Return:
+    ======
+    return a boolean
     """
     if abs(p) > 1 or abs(s) > 3:
         return True
@@ -117,6 +126,10 @@ def is_final_state(p, s):
 def random_policy():
     """
     return, in a randomly way, 4 or -4
+
+    Return:
+    ======
+    return an action
     """
     power = np.random.random_integers(0, 1)
     return ((-1) ** power) * 4
