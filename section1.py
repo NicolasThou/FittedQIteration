@@ -157,7 +157,7 @@ def random_policy():
     ======
     return an action
     """
-    power = np.random.randint(0, 1)
+    power = np.random.randint(0, 2)
     return ((-1) ** power) * 4
 
 def policy_alternative(action):
