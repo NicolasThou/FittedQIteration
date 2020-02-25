@@ -91,8 +91,8 @@ def derivee_seconde_p_inf_0(p, s, u):
     # recurrent term contracted
     k = 2 * p + 1
 
-    a = (u - k * (m * g * s + 2 * m * (s ** 5)) / (m * (1 + (s ** 3) * (k ** 2))))
-    b = 1 + ((s ** 3) * (k ** 2) / (1 + (s ** 2) * (k ** 2)))
+    a = (u/m - (k * (g * s + 2 * (s ** 5)))) / (1 + (s ** 2) * (k ** 2))
+    b = 1 + (((s ** 3) * (k ** 2)) / (1 + (s ** 2) * (k ** 2)))
     if b == 0:
         # error to handle in the future
         print('Denominator equal zero !!')
