@@ -53,9 +53,9 @@ def r(x, u):
     p_suivant = next_state[0]
     s_suivant = next_state[1]
     if p_suivant < -1 or np.abs(s_suivant) > 3:
-        return -3
+        return -1
     elif p_suivant > 1 and np.abs(s_suivant) <= 3:
-        return 3
+        return 1
     else:
         return 0
 
