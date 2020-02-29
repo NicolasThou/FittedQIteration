@@ -1,5 +1,6 @@
 import numpy as np
-import math
+from matplotlib import pyplot as plt
+
 
 U = np.array([-4, 4])  # action space
 m = 1
@@ -15,11 +16,11 @@ def f(x, u):
     """
 
     # initialization
-    p, s = x[0], x[1]
+    p, s = x
     new_p = p
     new_s = s
 
-    # euler method with 1000 step
+    # euler method with 1000 step (h=0.001)
     for i in range(1000):
         temp_p = new_p  # we keep the previous value
         temp_s = new_s  # we keep the previous value
@@ -39,9 +40,9 @@ def f_s(p, s, u):
             # recurrent term
         k = 1 + 5 * (p ** 2)
             # Hill'(p)
-        dH = 1 / (math.sqrt(k) ** 3)
+        dH = 1 / (np.sqrt(k) ** 3)
             # Hill''(p)
-        ddH = -15 * (p ** 2) * (math.sqrt(k)) / (k ** 3)
+        ddH = -(15*p*np.sqrt(k))/(k**3)
 
     first_term = u / (m * (1 + dH ** 2))
     second_term = -(g * dH) / (1 + dH ** 2)
@@ -64,11 +65,10 @@ def r(x, u):
     """
 
     next_state = f(x, u)  # use of the dynamic of the problem
-    p_suivant = next_state[0]
-    s_suivant = next_state[1]
-    if p_suivant < -1 or np.abs(s_suivant) > 3:
+    next_p, next_s = next_state
+    if next_p < -1 or np.abs(next_s) > 3:
         return -1
-    elif p_suivant > 1 and np.abs(s_suivant) <= 3:
+    elif next_p > 1 and np.abs(next_s) <= 3:
         return 1
     else:
         return 0
@@ -125,10 +125,14 @@ def policy_alternative(action):
     take the previous action, if the previous action was accelerate, then the policy
     return -4, but if the previous action was to slow down, then return +4
     """
-    if action == 4:  # we change the action, we accelerate then slow down etc...
-        return -4
+    return -action
+
+
+def hill(p):
+    if p < 0:
+        return (p**2) + p
     else:
-        return 4
+        return p/(np.sqrt(1 + 5*(p**2)))
 
 
 def simulation_section2():
@@ -136,15 +140,23 @@ def simulation_section2():
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
-    print(state)
+    p = []
+    s = []
     for i in range(50):
         action = random_policy()  # use a random policy
         print(action)
         state = f(state, action)  # use the dynamic of the domain
-        print(state)
+        p.append(state[0])
+        s.append(state[1])
         if is_final_state(state) == True:
             print('Nous avons atteint un état finale')
-            return None
+            break
+    fig, axis = plt.subplots()
+    axis.plot(p, s, '+')
+    # axis.set(xlim=(-1, 1), ylim=(-3, 3))
+    for i in range(len(p)):
+        axis.annotate(str(i), (p[i], s[i]))
+    plt.show()
 
 
 def simulation_section2_2():
@@ -153,9 +165,10 @@ def simulation_section2_2():
     """
     state = initial_state()
     print(state)
-    action = -4  # we begin with an acceleration
+    action = -4
     for i in range(50):
         action = policy_alternative(action)
+        print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
         if is_final_state(state) == True:
@@ -163,16 +176,23 @@ def simulation_section2_2():
             return None
 
 
+def disp_hill():
+    x = []
+    y = []
+    for p in range(-100, 100, 1):
+        pos = (p*1.0)/100
+        x.append(pos)
+        y.append(hill(pos))
+
+    fig, axis = plt.subplots()
+    axis.plot(x, y, '+')
+    axis.set(xlim=(-1, 1), ylim=(-0.5, 0.5))
+    plt.show()
+
+
 if __name__ == '__main__':
     assert is_final_state(np.array([-2, 0]))
     assert is_final_state(np.array([0, 5]))
-    print()
-    print('Use of alternativ policy')
-    print('If we change between accelerate and slow down each time, we won\'t reach a final state')
-    simulation_section2_2()
-    print()
-    print('Use of random policy')
-    print('If we accelerate two times, the car is too fast, so we reach a final state')
+
     simulation_section2()
 
-    print("test")
