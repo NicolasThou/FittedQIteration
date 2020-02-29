@@ -20,8 +20,9 @@ if __name__ == "__main__":
     # create a GIF file of the simulation
     frames = []
     imgs = os.listdir('simulation/')
-    for name in imgs:
+    for name in imgs:  # TODO problem, name is not selected in the same order of the image 00, 01, ..., 99
         name = "simulation/" + name
+        #print(name)
         img = Image.open(name)
         frames.append(img)
     frames[0].save('animated.gif', format='GIF',
