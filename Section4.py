@@ -11,9 +11,9 @@ if __name__ == "__main__":
     for f in files:
         os.remove('simulation/' + f)
 
-    # simulates the car goinf from left to right
+    # simulates the car going from left to right
     for i in range(100):
-        file = "simulation\simulation" + str(i).zfill(2) + ".png"
+        file = "simulation/simulation" + str(i).zfill(2) + ".png"
         position = -1 + 2*(i/100)
         save_caronthehill_image(position, 1, out_file=file)
 

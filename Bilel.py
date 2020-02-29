@@ -109,7 +109,7 @@ def is_final_state(x):
         return False
 
 
-def random_policy():
+def random_policy(x):
     """
     return, in a randomly way, 4 or -4
 
@@ -146,7 +146,7 @@ def simulation_section2():
     p = []
     s = []
     for i in range(50):
-        action = random_policy()  # use a random policy
+        action = random_policy(state)  # use a random policy
         print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state[0])
@@ -210,5 +210,5 @@ def disp_hill():
 if __name__ == '__main__':
     assert is_final_state(np.array([-2, 0]))
     assert is_final_state(np.array([0, 5]))
-
     simulation_section2()
+    simulation_section2_2()

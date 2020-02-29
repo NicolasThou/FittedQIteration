@@ -8,34 +8,6 @@ delta_t = 0.1  # discretization time
 integration_step = 0.001  # euler method step
 
 
-def f(x, u):
-    """
-    dynamic of the system
-    """
-
-    # initialization
-    p, s = x[0], x[1]
-    new_p = p
-    new_s = s
-
-    # check which Hill function to use
-    if p < 0:
-        g = lambda g_p, g_s, g_u: derivee_seconde_p_inf_0(g_p, g_s, g_u)
-    else:
-        g = lambda g_p, g_s, g_u: derivee_seconde_p_sup_equal_0(g_p, g_s, g_u)
-
-    # euler method with 1000 step
-    for i in range(1000):
-        temp_p = new_p  # we keep the previous value
-        temp_s = new_s  # we keep the previous value
-
-        # we use the values of the previous step, not the new ones !!
-        new_p = temp_p + integration_step * temp_s
-        new_s = temp_s + integration_step * g(temp_p, temp_s, u)
-
-    return np.array([new_p, new_s])
-
-
 def r(x, u):
     """
     reward function
@@ -74,59 +46,45 @@ def initial_state():
     return np.array([p0, s0])
 
 
-def derivee_seconde_p_inf_0(p, s, u):
+def f(x, u):
     """
-    Computes the second derivative of p for p<0
-
-    Argument:
-    ========
-    p is the position
-    s the speed
-    u the action
-
-    return:
-    ======
-    return the value of p"
+    dynamic of the system
     """
-    # recurrent term contracted
-    k = 2 * p + 1
 
-    a = (u/m - (k * (g * s + 2 * (s ** 5)))) / (1 + (s ** 2) * (k ** 2))
-    b = 1 + (((s ** 3) * (k ** 2)) / (1 + (s ** 2) * (k ** 2)))
-    if b == 0:
-        # error to handle in the future
-        print('Denominator equal zero !!')
-        return None
+    # initialization
+    p, s = x[0], x[1]
+    new_p = p
+    new_s = s
+
+    # euler method with 1000 step
+    for i in range(1000):
+        previous_p = new_p  # we keep the previous value
+        previous_s = new_s  # we keep the previous value
+
+        # we use the values of the previous step, not the new ones !!
+        new_p = previous_p + integration_step * previous_s
+        new_s = previous_s + integration_step * f_s(previous_p, previous_s, u)
+
+    return np.array([new_p, new_s])
+
+
+def f_s(p, s, u):
+    if p < 0:
+        dH = 2 * p + 1
+        ddH = 2
     else:
-        return a / b
+        # recurrent term
+        k = 1 + 5 * (p ** 2)
+        # Hill'(p)
+        dH = (1/np.sqrt(k)) * (1 - ((5 * (p**2)) / k))
+        # Hill''(p)
+        ddH = (- (5 * p) / k) * ((1 / np.sqrt(k)) * (1 - ((5 * (p **2)) / k) - ((10 * (p **2)) / np.sqrt(k))) + 2)
 
+    first_term = u / (m * (1 + dH ** 2))
+    second_term = -(g * dH) / (1 + dH ** 2)
+    third_term = -((s ** 2) * dH * ddH) / (1 + dH ** 2)
 
-def derivee_seconde_p_sup_equal_0(p, s, u):
-    """
-    derivative 2th of p when p >= 0
-
-    Argument:
-    ========
-    p is the position
-    s the speed
-    u the action
-
-    return:
-    ======
-    return the value of p"
-    """
-    denominateur_commun = 1 + ((s ** 2) / (1 + 5 * (p ** 2))) * ((1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2)))) ** 2)
-    numerateur1 = u / m
-    numerateur2 = g * (s / (np.sqrt(1 + 5 * (p ** 2)))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))
-    numerateur3 = ((15 * (s ** 5) * p) / (1 + 5 * (p ** 2))) * (((1 / (np.sqrt((1 + 5 * (p ** 2))))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))) ** 2)
-    denominateur_commun2 = 1 + (((1 / (np.sqrt((1 + 5 * (p ** 2))))) * (1 - ((5 * (p ** 2)) / (1 + 5 * (p ** 2))))) ** 2) * (s ** 3)
-
-    if denominateur_commun == 0 or denominateur_commun2 == 0:
-        # error to handle in the future
-        print('Denominator equal zero !!')
-        return None
-
-    return ((numerateur1 - numerateur2 + numerateur3) / denominateur_commun) / denominateur_commun2
+    return first_term + second_term + third_term
 
 
 def is_final_state(x):
@@ -149,7 +107,7 @@ def is_final_state(x):
         return False
 
 
-def random_policy():
+def random_policy(x):
     """
     return, in a randomly way, 4 or -4
 
@@ -159,6 +117,7 @@ def random_policy():
     """
     power = np.random.randint(0, 2)
     return ((-1) ** power) * 4
+
 
 def policy_alternative(action):
     """
@@ -171,6 +130,12 @@ def policy_alternative(action):
         return 4
 
 
+def policy_accelerate(state):
+    """
+    return always 4
+    """
+    return 4
+
 
 def simulation_section2():
     """
@@ -179,7 +144,7 @@ def simulation_section2():
     state = initial_state()
     print(state)
     for i in range(50):
-        action = random_policy()  # use a random policy
+        action = random_policy(state)  # use a random policy
         print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
@@ -202,6 +167,7 @@ def simulation_section2_2():
         if is_final_state(state) == True:
             print('Nous avons atteint un état finale')
             return None
+
 
 if __name__ == '__main__':
     assert is_final_state(np.array([-2, 0]))
