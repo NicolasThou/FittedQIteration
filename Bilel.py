@@ -17,22 +17,23 @@ def f(x, u):
 
     # initialization
     p, s = x
-    new_p = p
-    new_s = s
 
     # euler method with 1000 step (h=0.001)
     for i in range(1000):
-        temp_p = new_p  # we keep the previous value
-        temp_s = new_s  # we keep the previous value
+        temp_p = p  # we keep the previous value
+        temp_s = s  # we keep the previous value
 
         # we use the values of the previous step, not the new ones !!
-        new_p = temp_p + integration_step * temp_s
-        new_s = temp_s + integration_step * f_s(temp_p, temp_s, u)
+        p = temp_p + integration_step * temp_s
+        s = temp_s + integration_step * f_s(temp_p, temp_s, u)
 
-    return np.array([new_p, new_s])
+    return np.array([p, s])
 
 
 def f_s(p, s, u):
+    """
+    Dynamic of s
+    """
     if p < 0:
         dH = 2*p + 1
         ddH = 2
@@ -117,7 +118,8 @@ def random_policy():
     return an action
     """
     power = np.random.randint(0, 2)
-    return ((-1) ** power) * 4
+    # return ((-1) ** power) * 4
+    return 4
 
 
 def policy_alternative(action):
@@ -140,12 +142,14 @@ def simulation_section2():
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
+    print(state[0])
     p = []
     s = []
     for i in range(50):
         action = random_policy()  # use a random policy
         print(action)
         state = f(state, action)  # use the dynamic of the domain
+        print(state[0])
         p.append(state[0])
         s.append(state[1])
         if is_final_state(state) == True:
@@ -153,7 +157,7 @@ def simulation_section2():
             break
     fig, axis = plt.subplots()
     axis.plot(p, s, '+')
-    # axis.set(xlim=(-1, 1), ylim=(-3, 3))
+    axis.set(xlim=(-1, 1), ylim=(-3, 3))
     for i in range(len(p)):
         axis.annotate(str(i), (p[i], s[i]))
     plt.show()
@@ -179,14 +183,27 @@ def simulation_section2_2():
 def disp_hill():
     x = []
     y = []
+    dy = []
+    ddy = []
     for p in range(-100, 100, 1):
         pos = (p*1.0)/100
         x.append(pos)
         y.append(hill(pos))
 
-    fig, axis = plt.subplots()
-    axis.plot(x, y, '+')
-    axis.set(xlim=(-1, 1), ylim=(-0.5, 0.5))
+        k = 1 + 5 * (pos ** 2)
+        dH = 1 / (np.sqrt(k) ** 3)
+        ddH = -(15*pos*np.sqrt(k))/(k**3)
+
+        dy.append(dH)
+        ddy.append(ddH)
+
+    fig, axis = plt.subplots(3, 1)
+    axis[0].plot(x, y, '+')
+    axis[1].plot(x, dy, '+')
+    axis[2].plot(x, ddy, '+')
+    axis[0].set(xlim=(-1, 1))
+    axis[1].set(xlim=(-1, 1))
+    axis[2].set(xlim=(-1, 1))
     plt.show()
 
 
@@ -195,4 +212,3 @@ if __name__ == '__main__':
     assert is_final_state(np.array([0, 5]))
 
     simulation_section2()
-
