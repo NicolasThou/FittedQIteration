@@ -1,6 +1,5 @@
 from section1 import *
 import numpy as np
-import time
 
 
 def j_n(initial_state, policy, N):  # policy is a function approximator
@@ -81,15 +80,14 @@ def monte_carlo_simulation(policy, N, N_Monte_Carlo):
 
 if __name__ == '__main__':
 
-    start_time = time.time()
-    print("Simulation First part of this file")
+    print("Simulation j_n and expected return")
     x0 = initial_state()
     print(j_n(x0, random_policy, 200))
     #print(expected_return(random_policy, 10, 0.05))
 
     print()
-    print("Simulation 2nd part of the file")
-
+    print("==================================")
     print()
+
     print("Monte Carlo Simulation")
     print(monte_carlo_simulation(random_policy, 200, 10))

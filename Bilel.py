@@ -212,3 +212,4 @@ if __name__ == '__main__':
     assert is_final_state(np.array([0, 5]))
     simulation_section2()
     simulation_section2_2()
+    disp_hill()

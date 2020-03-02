@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.misc import derivative
 
 
 U = np.array([-4, 4])  # action space
@@ -65,13 +66,46 @@ def f_s(p, s, u):
         # Hill'(p)
         dH = (1/np.sqrt(k)) * (1 - ((5 * (p**2)) / k))
         # Hill''(p)
-        ddH = (- (5 * p) / k) * ((1 / np.sqrt(k)) * (1 - ((5 * (p **2)) / k) - ((10 * (p **2)) / np.sqrt(k))) + 2)
+        ddH = (-(5 * p) / k) * ((1 / np.sqrt(k)) * (1 - ((5 * (p **2)) / k) - ((10 * (p **2)) / np.sqrt(k))) + 2)
 
     first_term = u / (m * (1 + dH ** 2))
     second_term = -(g * dH) / (1 + dH ** 2)
     third_term = -((s ** 2) * dH * ddH) / (1 + dH ** 2)
 
     return first_term + second_term + third_term
+
+
+def h(p):
+    return p/(np.sqrt(1 + 5 * (p ** 2)))
+
+def h_prime(p):
+    k = 1 + 5 * (p ** 2)
+    return (1/np.sqrt(k)) * (1 - ((5 * (p**2)) / k))
+
+def h_seconde(p):
+    k = 1 + 5 * (p ** 2)
+    return (-(5 * p) / k) * ((1 / np.sqrt(k)) * (1 - ((5 * (p **2)) / k) - ((10 * (p **2)) / np.sqrt(k))) + 2)
+
+def test_derivative():
+    l = np.linspace(0, 100, 101)
+    result = []
+    result2 = []
+    test = []
+    for i in l:
+        result.append(derivative(h, i, dx=1e-6))
+        result2.append(h_prime(i))
+        a = int(i)
+        test.append(np.abs(result[a] - result2[a]))
+
+    result = np.array(result)
+    result2 = np.array(result2)
+    print(test)
+    print(result)
+    print(result2)
+    #plt.scatter(l, result, marker="o")
+    #plt.scatter(l, result2, marker="^")
+    plt.scatter(l, test)
+    plt.show()
 
 
 """
@@ -308,6 +342,7 @@ def monte_carlo_simulation(policy, N, N_Monte_Carlo):
 
     result = np.array(result)
     initial_state_x = np.array(initial_state_x)
+
     """
     print(np.shape(result))
     print(np.shape(initial_state_x))
@@ -321,6 +356,10 @@ def monte_carlo_simulation(policy, N, N_Monte_Carlo):
 
 if __name__ == '__main__':
 
+
+    print('Test of derivative')
+
+
     print('Use of random policy')
     print('If we accelerate two times, the car is too fast, so we reach a final state')
     simulation_section2()
@@ -333,7 +372,7 @@ if __name__ == '__main__':
     print()
     print("expected return policy")
     state = initial_state()
-    print(expected_return_policy(state, random_policy, 10))
+    print(expected_return_policy(state, random_policy, 200))
 
     print()
     print("simulation Monte Carlo")
