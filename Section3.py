@@ -4,16 +4,16 @@ import numpy as np
 
 def j_n(initial_state, policy, N):  # policy is a function approximator
     """
-    state-value function, iterative version
+    recurrence state-value function
     """
-    state = initial_state
-    j = 0
-    for i in range(N):
-        action = policy(state)
-        j += (gamma**i)*r(state, action)
-        state = f(state, action)
-
-    return j
+    if N < 0:
+        print("N has to be greater or equal than 0 !")
+    elif N == 0:
+        return 0
+    else:
+        action = policy(initial_state)
+        next_state = f(initial_state, action)
+        return r(initial_state, action) + gamma*j_n(next_state, policy, N-1)
 
 
 def expected_return(policy, nb_simulation, error_threshold):
@@ -25,7 +25,6 @@ def expected_return(policy, nb_simulation, error_threshold):
     a = (error_threshold * ((1 - gamma)**2))/2  # TODO make a comment here
     # for N >= n, J_N is a good approximation of J
     n = int(np.ceil(np.log(a)/np.log(gamma)))  # TODO make a comment here
-    print(n)
 
     j_list = []
     for i in range(nb_simulation):
@@ -39,7 +38,6 @@ def expected_return(policy, nb_simulation, error_threshold):
 
     return np.mean(j_list)
 
-""" =================================  """
 
 def expected_return_policy(state, policy, N):
     """
@@ -86,8 +84,7 @@ def monte_carlo_simulation(policy, N, N_Monte_Carlo):
 if __name__ == '__main__':
     print("Simulation j_n and expected return")
     x0 = initial_state()
-    print(j_n(x0, random_policy, 200))
-    #print(expected_return(random_policy, 10, 0.05))
+    print(expected_return(random_policy, 10, 0.05))
 
     print()
     print("==================================")
