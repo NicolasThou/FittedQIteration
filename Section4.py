@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 from save_simulation import *
+import section1 as s1
 
 
 # Execute the simulation and saves images in a directory
@@ -8,24 +9,25 @@ if __name__ == "__main__":
 
     # delete all the pictures of previous simulation
     files = os.listdir('simulation/')
-    for f in files:
-        os.remove('simulation/' + f)
+    for file in files:
+        os.remove('simulation/' + file)
 
-    # simulates the car going from left to right of the hill
-    for i in range(100):
+    x = s1.initial_state()
+    i = 1
+    while s1.is_final_state(x) is False:
         file = "simulation/simulation" + str(i).zfill(2) + ".png"
-        position = -1 + 2*(i/100)
 
         # save the image in the 'simulation' folder
-        save_caronthehill_image(position, 1, out_file=file)
+        save_caronthehill_image(x[0], 1, out_file=file)
+        u = s1.random_policy(x)
+        x = s1.f(x, u)
+        i += 1
 
     # create a GIF file of the simulation
     frames = []
     imgs = sorted(os.listdir('simulation/'))
-    print(imgs)
-    for name in imgs:  # TODO problem, name is not selected in the same order of the images 00, 01, ..., 99
+    for name in imgs:
         name = "simulation/" + name
-        #print(name)
         img = Image.open(name)
 
         # add the image to the list of frames

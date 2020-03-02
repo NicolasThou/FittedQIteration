@@ -84,7 +84,6 @@ def monte_carlo_simulation(policy, N, N_Monte_Carlo):
 
 
 if __name__ == '__main__':
-
     print("Simulation j_n and expected return")
     x0 = initial_state()
     print(j_n(x0, random_policy, 200))
