@@ -161,6 +161,7 @@ def simulation_section2():
     for i in range(len(p)):
         axis.annotate(str(i), (p[i], s[i]))
     plt.show()
+    return p, s
 
 
 def simulation_section2_2():
@@ -210,6 +211,12 @@ def disp_hill():
 if __name__ == '__main__':
     assert is_final_state(np.array([-2, 0]))
     assert is_final_state(np.array([0, 5]))
-    simulation_section2()
-    simulation_section2_2()
-    disp_hill()
+
+    p, _ = simulation_section2()
+    h = []
+    for x in p:
+        h.append(hill(x))
+    fig, axis = plt.subplots()
+    axis.plot(p, h, '.')
+    axis.set(xlim=(-1, 1), ylim=(-0.5, 0.5))
+    plt.show()

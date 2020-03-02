@@ -23,13 +23,18 @@ def expected_return(policy, nb_simulation, error_threshold):
     """
     # N threshold computation using J function bound
     a = (error_threshold * ((1 - gamma)**2))/2  # TODO make a comment here
+    # for N >= n, J_N is a good approximation of J
     n = int(np.ceil(np.log(a)/np.log(gamma)))  # TODO make a comment here
     print(n)
 
     j_list = []
     for i in range(nb_simulation):
         x_0 = initial_state()
+
+        # compute the infinite time horizon state value function for this initial state
         j = j_n(x_0, policy, n)
+
+        # add it to the list of the Monte-Carlo simulation
         j_list.append(j)
 
     return np.mean(j_list)
