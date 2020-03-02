@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     # create a GIF file of the simulation
     frames = []
-    imgs = os.listdir('simulation/')
+    imgs = sorted(os.listdir('simulation/'))
     print(imgs)
     for name in imgs:  # TODO problem, name is not selected in the same order of the images 00, 01, ..., 99
         name = "simulation/" + name
