@@ -1,5 +1,5 @@
 import numpy as np
-from section1 import *
+from Section2 import *
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import confusion_matrix

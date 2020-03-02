@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 from save_simulation import *
-import section1 as s1
+import Section2 as s1
 
 
 # Execute the simulation and saves images in a directory

@@ -1,4 +1,4 @@
-from section1 import *
+from Section2 import *
 import numpy as np
 
 
