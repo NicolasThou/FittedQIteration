@@ -38,11 +38,13 @@ def f_s(p, s, u):
         dH = 2*p + 1
         ddH = 2
     else:
-            # recurrent term
+        # recurrent term
         k = 1 + 5 * (p ** 2)
-            # Hill'(p)
+
+        # Hill'(p)
         dH = 1 / (np.sqrt(k) ** 3)
-            # Hill''(p)
+
+        # Hill''(p)
         ddH = -(15*p*np.sqrt(k))/(k**3)
 
     first_term = u / (m * (1 + dH ** 2))
@@ -65,8 +67,7 @@ def r(x, u):
     return an integer
     """
 
-    next_state = f(x, u)  # use of the dynamic of the problem
-    next_p, next_s = next_state
+    next_p, next_s = f(x, u)  # use of the dynamic of the problem
     if next_p < -1 or np.abs(next_s) > 3:
         return -1
     elif next_p > 1 and np.abs(next_s) <= 3:
@@ -118,8 +119,15 @@ def random_policy(x):
     return an action
     """
     power = np.random.randint(0, 2)
-    # return ((-1) ** power) * 4
+    return ((-1) ** power) * 4
+
+
+def forward_policy(x):
     return 4
+
+
+def backward_policy(x):
+    return -4
 
 
 def policy_alternative(action):
@@ -146,13 +154,13 @@ def simulation_section2():
     p = []
     s = []
     for i in range(50):
-        action = random_policy(state)  # use a random policy
+        action = backward_policy(state)  # use a random policy
         print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state[0])
         p.append(state[0])
         s.append(state[1])
-        if is_final_state(state) == True:
+        if is_final_state(state):
             print('Nous avons atteint un état finale')
             break
     fig, axis = plt.subplots()
@@ -176,7 +184,7 @@ def simulation_section2_2():
         print(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
-        if is_final_state(state) == True:
+        if is_final_state(state):
             print('Nous avons atteint un état finale')
             return None
 
@@ -208,11 +216,7 @@ def disp_hill():
     plt.show()
 
 
-if __name__ == '__main__':
-    assert is_final_state(np.array([-2, 0]))
-    assert is_final_state(np.array([0, 5]))
-
-    p, _ = simulation_section2()
+def plot_hill_trajectory(p):
     h = []
     for x in p:
         h.append(hill(x))
@@ -220,3 +224,10 @@ if __name__ == '__main__':
     axis.plot(p, h, '.')
     axis.set(xlim=(-1, 1), ylim=(-0.5, 0.5))
     plt.show()
+
+
+if __name__ == '__main__':
+    assert is_final_state(np.array([-2, 0]))
+    assert is_final_state(np.array([0, 5]))
+
+    p, _ = simulation_section2()

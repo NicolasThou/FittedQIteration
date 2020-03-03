@@ -138,7 +138,7 @@ def simulation_section2():
         a.append(action)
         state = f(state, action)  # use the dynamic of the domain
         print(state)
-        if is_final_state(state) == True:
+        if is_final_state(state):
             print('Nous avons atteint un état finale, la liste d\'action est :')
             print(a)
             return None
