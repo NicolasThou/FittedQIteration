@@ -30,19 +30,15 @@ def create_images(i, p0, p1):
     return i
 
 
-# Execute the simulation and saves images in a directory
-if __name__ == "__main__":
-
+def visualize_policy(x, policy):
     # delete all the pictures of previous simulation
     files = os.listdir('simulation/')
     for file in files:
         os.remove('simulation/' + file)
 
-    x = s2.initial_state()
     i = 1
     while not s2.is_final_state(x):
-        u = s2.random_policy(x)
-        print(u)
+        u = policy(x)
         new_x = s2.f(x, u)
         i = create_images(i, x[0], new_x[0])
         x = new_x
@@ -62,3 +58,9 @@ if __name__ == "__main__":
                    append_images=frames[1:],
                    save_all=True,
                    duration=100)
+
+
+# Execute the simulation and saves images in a directory
+if __name__ == "__main__":
+    x = s2.initial_state()
+    visualize_policy(x, s2.random_policy)

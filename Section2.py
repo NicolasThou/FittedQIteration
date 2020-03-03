@@ -20,13 +20,13 @@ def r(x, u):
     ======
     return an integer
     """
-    
-    next_state = f(x, u) # use of the dynamic of the problem
-    p_suivant = next_state[0]
-    s_suivant = next_state[1]
-    if p_suivant < -1 or np.abs(s_suivant) > 3:
+
+    # use of the dynamic of the problem
+    p, s = f(x, u)
+
+    if p < -1 or np.abs(s) > 3:
         return -1
-    elif p_suivant > 1 and np.abs(s_suivant) <= 3:
+    elif p > 1 and np.abs(s) <= 3:
         return 1
     else:
         return 0
@@ -53,28 +53,28 @@ def f(x, u):
 
     # initialization
     p, s = x[0], x[1]
-    new_p = p
-    new_s = s
 
     # euler method with 1000 step
     for i in range(1000):
-        previous_p = new_p  # we keep the previous value
-        previous_s = new_s  # we keep the previous value
+        previous_p = p  # we keep the previous value
+        previous_s = s  # we keep the previous value
 
         # we use the values of the previous step, not the new ones !!
-        new_p = previous_p + integration_step * previous_s
-        new_s = previous_s + integration_step * f_s(previous_p, previous_s, u)
+        p = previous_p + integration_step * previous_s
+        s = previous_s + integration_step * f_s(previous_p, previous_s, u)
 
-    return np.array([new_p, new_s])
+    return np.array([p, s])
 
 
 def f_s(p, s, u):
     if p < 0:
+        # first and second derivatives of Hill(p)
         dH = 2 * p + 1
         ddH = 2
     else:
         # recurrent term
         k = 1 + 5 * (p ** 2)
+
         # Hill'(p)
         dH = 1 / (np.sqrt(k) ** 3)
         # Hill''(p)
@@ -126,31 +126,34 @@ def policy_accelerate(state):
     return 4
 
 
+def policy_backward(x):
+    """
+    return always -4
+    """
+    return -4
+
+
 def simulation_section2():
     """
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
-    print(state)
     a = []
     for i in range(50):
         action = random_policy(state)  # use a random policy
         a.append(action)
         state = f(state, action)  # use the dynamic of the domain
-        print(state)
         if is_final_state(state):
-            print('Nous avons atteint un état finale, la liste d\'action est :')
+            print('We\'ve reached a finale state, actions are :')
             print(a)
             return None
-    print('La liste d\'action est :')
+
+    # if never reach a final state, print the actions
+    print('Actions are :')
     print(a)
 
+
 if __name__ == '__main__':
-
-    print()
-    print("==========================")
-    print()
-
     print('Use of random policy')
     print()
     simulation_section2()
