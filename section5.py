@@ -2,7 +2,7 @@ import numpy as np
 from Section2 import *
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import GridSearchCV
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
@@ -11,56 +11,105 @@ import copy as cp
 
 Br = 1  # bound value for the reward
 
+
 def neural_network():
     """
     Build the baseline for an artificial neural network with keras
     """
     regressor = Sequential()
-    regressor.add(Dense(units=4, input_dim=2, kernel_initializer='random_uniform', activation='relu'))
-    regressor.add(Dropout(p=0.1))  # avoid overfitting
+    regressor.add(Dense(units=4, input_dim=3, kernel_initializer='random_uniform', activation='relu'))
+    regressor.add(Dropout(rate=0.1))  # avoid overfitting
     regressor.add(Dense(units=4, kernel_initializer='random_uniform', activation='relu'))
-    regressor.add(Dropout(p=0.1))  # avoid overfitting
+    regressor.add(Dropout(rate=0.1))  # avoid overfitting
     regressor.add(Dense(units=1, kernel_initializer='random_uniform', activation='linear'))
-    regressor.compile(loss='mean_squared_error', metrics='accuracy')
+    regressor.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     return regressor
 
 
-def test_neural_network(ann, X_train, y_train, X_test, y_test):
+def accuracy_neural_network(X_train, y_train, X_test, y_test):
     """
     test the regressor Ann, with a K-folds cross validation method
 
-    Argument:
-    ========
-    ann : is a regressor
-
     Return:
     ======
-    print the average accuracy
+    print the average accuracy, confusion matrix, the best score obtain by the best parameters
+
     """
 
     # use of confusion matrix
 
     regressor = neural_network()
+    regressor.fit(X_train, y_train, batch_size=2, epochs=2)
     y_pred = regressor.predict(X_test)
-    cm = confusion_matrix(y_test, y_pred)
-    print("Here the confusion matrix")
-    print(cm)
+
 
     # use of k-fold cross validation
 
     regressor = KerasRegressor(build_fn=neural_network, batch_size=10, nb_epoch=100)
-    accuracies = cross_val_score(estimator=regressor, X=X_train, y=y_train, cv=10, n_jobs=-1)
+    accuracies = cross_val_score(estimator=regressor, X=X_train, y=y_train, cv=3, n_jobs=-1)
     mean = accuracies.mean()
     variance = accuracies.std()
     print('The mean of accuracy is : {}' .format(mean))
     print('The variance is : {}' .format(variance))
 
-    # use of grid_search to find the best hyperparameters epoch, batch_size and the best optimizer
+
+
+    # use of GridSearchCV method to find the best hyperparameters epoch, batch_size and the best optimizer
+
+    regressor2 = KerasRegressor(build_fn=neural_network)
+    parameters = {'batch_size' : [10, 20, 30],
+                  'nb_epoch': [100, 200, 300],
+                  'optimizer': ['adam', 'rmsprop']}  # we test different parameters
+    grid_search = GridSearchCV(estimator=regressor2, param_grid=parameters, scoring='accuracy', cv=3)
+    grid_search.fit(X_train, y_train)
+    best_param = grid_search.best_params_
+    best_score = grid_search.best_score_
+    print(best_param)
+    print(best_score)
+
+
+
+"""
+The algorithm of extremely_randomized_trees is coding thanks to the article : Extremely randomized trees
+Pierre Geurts · Damien Ernst · Louis Wehenkel (2 March 2006).
+
+"
+The term attribute denotes a particular input variable used in a
+supervised learning problem. The candidate attributes denote all input variables that are
+available for a given problem. We use the term output to refer to the target variable that
+defines the supervised learning problem. 
+
+The term learning sample denotes the observations used to build a model, and the term test
+sample the observations used to compute its accuracy (error-rate, or mean square-error).
+N refers to the size of the learning sample, i.e., its number of observations, and n refers to
+the number of candidate attributes, i.e., the dimensionality of the input space. "
+
+"""
 
 def extremely_randomized_trees():
     """
     implement the extra trees algorithm
     """
+
+def Split_a_node(S):
+    """
+    Input: the local learning subset S corresponding to the node we want to split
+    Output: a split [a < ac] or nothing
+    """
+
+def Pick_a_random_split(S,a):
+    """
+    Inputs: a subset S and an attribute a
+    Output: a split
+    """
+
+def Stop_split(S):
+    """
+    Input: a subset S
+    Output: a boolean
+    """
+
+
 
 
 def first_generation_set_one_step_system_transition():
@@ -94,7 +143,7 @@ def dist(function1, function2, F):
     return an integer, the distance between this 2 functions
     """
     sum = 0
-    l = len(F)
+    l = len(F)  # only F is a list, whereas use np.shape if it is an array
     for tuple in F:
         difference = (function1(tuple[0], tuple[1]) - function2(tuple[0], tuple[1]))**2
         sum += difference
@@ -162,9 +211,9 @@ def fitted_Q_iteration_first_stoppin_rule(F, regressor, batch_size=0, epoch=0):
     while N < max:
         N = N + 1
         X, y = build_training_set(F, sequence_Q_N[N-1])
-        if batch_size != 0 and epoch != 0:
-            regressor.fit(X, y, batch_size=batch_size, epoch=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
-        else:
+        if batch_size != 0 and epoch != 0:  # means that we use a neural network as a supervised learning algorithm
+            regressor.fit(X, y, batch_size=batch_size, epochs=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
+        else:  # means that we use extra trees or logistic regression
             regressor.fit(X, y)
         sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
     return sequence_Q_N
@@ -200,15 +249,17 @@ def fitted_Q_iteration_second_stopping_rule(F, regressor, batch_size=0, epoch=0)
         regressor.fit(X, y)
     sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
 
-    # Iteration
+    # Iteration for N > 1
     distance = dist(sequence_Q_N[N], sequence_Q_N[N-1], F)
+    print("the first distance is : ")
+    print(distance)
     tolerance_fixed = 0.01
     while distance > tolerance_fixed:
         N = N + 1
         X, y = build_training_set(F, sequence_Q_N[N - 1])
         if batch_size != 0 and epoch != 0:
             regressor.fit(X, y, batch_size=batch_size,
-                          epoch=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
+                          epochs=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
         else:
             regressor.fit(X, y)
         sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
@@ -223,6 +274,22 @@ if __name__ == '__main__':
     tolerance_fixed = 0.01
     max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma)))  # equal to 220
     print(max)
+
+
+    ann = neural_network()
+    X_train = np.array([[0.5, 2, 4], [-0.5, 2.2, 4], [0.4, 2, -4], [0.6, 2, -4]])
+    print(np.shape(X_train))
+    X_test = np.array([[0.4, 2, -4], [0.5, 1, -4], [0.5, 1, 4], [0.98, 2, 4]])
+    y_train = [1, 0, -1, 1]
+    y_test = [-1, 0, 0, -1]
+    print(X_train)
+    print(X_test)
+    print(y_train)
+    print(y_test)
+
+
+
+    accuracy_neural_network(X_train, y_train, X_test, y_test)
 
     print()
     print('------ First strategies for generating sets of one-step system transitions --------')
@@ -249,11 +316,11 @@ if __name__ == '__main__':
     print()
 
     print()
-    print('Display of Q_N using Neural Network')
+    print('------------- Display of Q_N using Neural Network ----------------- ')
     print()
 
     print()
-    print('J_N Expected return of µ^*_N')
+    print('------------------ J_N Expected return of µ^*_N ------------------- ')
     print()
 
 
