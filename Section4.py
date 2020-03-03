@@ -1,8 +1,33 @@
 import os
+import numpy as np
 from PIL import Image
 from save_simulation import *
 import Section2 as s2
-import Bilel
+
+
+def create_images(i, p0, p1):
+    step = 0.1
+
+    # computes how much image transition we need
+    nb = int(np.floor(np.abs(p1-p0)/step))
+
+    # look the sens the car is moving
+    if p0 < p1:
+        sign = 1
+    else:
+        sign = -1
+
+    file = "simulation/simulation" + str(i).zfill(2) + ".png"
+    save_caronthehill_image(p0, 1, out_file=file)
+    i += 1
+
+    for n in range(nb):
+        file = "simulation/simulation" + str(i).zfill(2) + ".png"
+        # we add an image every step units
+        save_caronthehill_image(p0 + sign*(n+1)*step, 1, out_file=file)
+        i += 1
+
+    return i
 
 
 # Execute the simulation and saves images in a directory
@@ -15,14 +40,12 @@ if __name__ == "__main__":
 
     x = s2.initial_state()
     i = 1
-    while s2.is_final_state(x) is False:
-        file = "simulation/simulation" + str(i).zfill(2) + ".png"
-
-        # save the image in the 'simulation' folder
-        save_caronthehill_image(x[0], 1, out_file=file)
-        u = Bilel.forward_policy(x)
-        x = s2.f(x, u)
-        i += 1
+    while not s2.is_final_state(x):
+        u = s2.random_policy(x)
+        print(u)
+        new_x = s2.f(x, u)
+        i = create_images(i, x[0], new_x[0])
+        x = new_x
 
     # create a GIF file of the simulation
     frames = []

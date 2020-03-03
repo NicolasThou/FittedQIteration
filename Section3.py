@@ -1,5 +1,7 @@
-from Section2 import *
+from matplotlib import pyplot as plt
 import numpy as np
+import Section2 as s2
+import Bilel
 
 
 def j_n(initial_state, policy, N):  # policy is a function approximator
@@ -12,8 +14,8 @@ def j_n(initial_state, policy, N):  # policy is a function approximator
         return 0
     else:
         action = policy(initial_state)
-        next_state = f(initial_state, action)
-        return r(initial_state, action) + gamma*j_n(next_state, policy, N-1)
+        next_state = s2.f(initial_state, action)
+        return s2.r(initial_state, action) + s2.gamma*j_n(next_state, policy, N-1)
 
 
 def expected_return(policy, nb_simulation, error_threshold):
@@ -22,13 +24,13 @@ def expected_return(policy, nb_simulation, error_threshold):
     over the infinite time horizon using Monte-Carlo simulation
     """
     # N threshold computation using J function bound
-    a = (error_threshold * ((1 - gamma)**2))/2
+    a = (error_threshold * ((1 - s2.gamma)**2))/2
     # for N >= n, J_N is a good approximation of J
-    n = int(np.ceil(np.log(a)/np.log(gamma)))
+    n = int(np.ceil(np.log(a)/np.log(s2.gamma)))
 
     j_list = []
     for i in range(nb_simulation):
-        x_0 = initial_state()
+        x_0 = s2.initial_state()
 
         # compute the infinite time horizon state value function for this initial state
         j = j_n(x_0, policy, n)
@@ -61,15 +63,18 @@ def monte_carlo_simulation(policy, N_Monte_Carlo):
 
 
 if __name__ == '__main__':
-    print("Simulation j_n and expected return")
-    x0 = initial_state()
-    print(j_n(x0, random_policy, 100))
+    j = []
+    dj = []
+    pj = expected_return(Bilel.forward_policy, 10, 0.01)
+    sample = range(20, 160, 10)
+    for n in sample:
+        print(n)
+        nj = expected_return(Bilel.forward_policy, n, 0.01)
+        j.append(nj)
+        dj.append(abs(pj - nj))
+        pj = nj
 
-    print()
-    print("==================================")
-    print()
-
-    print(" Monte Carlo Simulation ")
-    print(monte_carlo_simulation(random_policy, 10))
-    print(" Expected return ")
-    print(expected_return(random_policy, 10, 0.01))
+    plt.xlabel('number of simulations')
+    plt.ylabel('$|\ J^{\mu}_{N}\ -\ J^{\mu}_{N-1}\ |$')
+    plt.plot(sample, dj)
+    plt.show()
