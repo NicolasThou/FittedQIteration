@@ -133,14 +133,17 @@ def policy_backward(x):
     return -4
 
 
-def simulation_section2():
+def simulation():
     """
     Simulate the policy in the domain from an initial state and display the trajectory
     """
     state = initial_state()
     a = []
     for i in range(50):
-        action = random_policy(state)  # use a random policy
+        # use a random policy
+        action = random_policy(state)
+
+        print("state : " + str((round(state[0], 2), round(state[1], 2))) + " | action : " + str(action))
         a.append(action)
         state = f(state, action)  # use the dynamic of the domain
         if is_final_state(state):
@@ -154,6 +157,4 @@ def simulation_section2():
 
 
 if __name__ == '__main__':
-    print('Use of random policy')
-    print()
-    simulation_section2()
+    simulation()

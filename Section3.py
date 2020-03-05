@@ -1,10 +1,9 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import Section2 as s2
-import Bilel
 
 
-def j_n(initial_state, policy, N):  # policy is a function approximator
+def j_n(initial_state, policy, N):
     """
     recurrence state-value function
     """
@@ -24,12 +23,13 @@ def monte_carlo_simulation(policy, number_of_sample, error_threshold):
     """
     # N threshold computation using J function bound
     a = (error_threshold * ((1 - s2.gamma) ** 2)) / 2
-    
+
     # for N >= n, J_N is a good approximation of J
     n = int(np.ceil(np.log(a) / np.log(s2.gamma)))
 
     result = []
     for i in range(number_of_sample):
+        print('simulation ' + str(i+1))
         state = s2.initial_state()
         result.append(j_n(state, policy, n))
 
@@ -47,10 +47,11 @@ def multiple_simulations(policy, min, max, error_threshold):
     # store the difference between two consecutive simulations
     diff = []
 
-    # first simulation
-    previous_j = monte_carlo_simulation(policy, min, error_threshold)
+    previous_j = 0
 
-    sample = range(min+10, max, 10)
+    # save the numbers of sample to plot a figure
+    sample = range(min, max+10, 10)
+
     for n in sample:
         print("Monte-Carlo simulation using " + str(n) + " samples")
 
@@ -62,12 +63,17 @@ def multiple_simulations(policy, min, max, error_threshold):
         diff.append(abs(previous_j - new_j))
         previous_j = new_j
 
+    # delete the first elements
+    diff = diff[1:]
+    sample = sample[1:]
+
     # display the evolution of the difference along with the number of simulations
     plt.xlabel('number of simulations')
-    plt.title(str(max))
+    plt.title("Difference of consecutive simulations expected return")
     plt.plot(sample, diff)
     plt.show()
 
 
 if __name__ == '__main__':
-    multiple_simulations(s2.random_policy, 100, 250, 0.01)
+    expected = monte_carlo_simulation(s2.random_policy, 90, 0.01)
+    print(expected)
