@@ -23,31 +23,51 @@ def monte_carlo_simulation(policy, number_of_sample, error_threshold):
     Compute simulation, more faster than the function expected_return
     """
     # N threshold computation using J function bound
-    a = (error_threshold * ((1 - gamma) ** 2)) / 2
+    a = (error_threshold * ((1 - s2.gamma) ** 2)) / 2
+    
     # for N >= n, J_N is a good approximation of J
-    n = int(np.ceil(np.log(a) / np.log(gamma)))
+    n = int(np.ceil(np.log(a) / np.log(s2.gamma)))
 
     result = []
     for i in range(number_of_sample):
-        state = initial_state()
+        state = s2.initial_state()
         result.append(j_n(state, policy, n))
 
     return np.mean(result)
 
 
-if __name__ == '__main__':
+def multiple_simulations(policy, min, max, error_threshold):
+    """
+    Computes and display the difference of the state-value function between two simulations
+    using different number of samples from min to max
+    """
+    # store the values of j
     j = []
-    dj = []
-    pj = expected_return(Bilel.forward_policy, 10, 0.01)
-    sample = range(20, 160, 10)
-    for n in sample:
-        print(n)
-        nj = expected_return(Bilel.forward_policy, n, 0.01)
-        j.append(nj)
-        dj.append(abs(pj - nj))
-        pj = nj
 
+    # store the difference between two consecutive simulations
+    diff = []
+
+    # first simulation
+    previous_j = monte_carlo_simulation(policy, min, error_threshold)
+
+    sample = range(min+10, max, 10)
+    for n in sample:
+        print("Monte-Carlo simulation using " + str(n) + " samples")
+
+        # computes Monte-carlo simulation
+        new_j = monte_carlo_simulation(policy, n, error_threshold)
+        j.append(new_j)
+
+        # computes difference with previous simulation
+        diff.append(abs(previous_j - new_j))
+        previous_j = new_j
+
+    # display the evolution of the difference along with the number of simulations
     plt.xlabel('number of simulations')
-    plt.ylabel('$|\ J^{\mu}_{N}\ -\ J^{\mu}_{N-1}\ |$')
-    plt.plot(sample, dj)
+    plt.title(str(max))
+    plt.plot(sample, diff)
     plt.show()
+
+
+if __name__ == '__main__':
+    multiple_simulations(s2.random_policy, 100, 250, 0.01)
