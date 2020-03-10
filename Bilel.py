@@ -13,7 +13,7 @@ def simulation():
     p = []
     s = []
     for i in range(50):
-        action = forward_policy(state)  # use a random policy
+        action = trajectory.forward_policy(state)  # use a random policy
         print(action)
         state = domain.f(state, action)  # use the dynamic of the domain
         print(state[0])

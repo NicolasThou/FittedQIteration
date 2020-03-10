@@ -86,52 +86,98 @@ the number of candidate attributes, i.e., the dimensionality of the input space.
 
 """
 
+
 def extremely_randomized_trees():
     """
     implement the extra trees algorithm
     """
 
-def Split_a_node(S):
+
+def split_a_node(S):
     """
     Input: the local learning subset S corresponding to the node we want to split
     Output: a split [a < ac] or nothing
     """
 
-def Pick_a_random_split(S,a):
+
+def pick_a_random_split(S, a):
     """
     Inputs: a subset S and an attribute a
     Output: a split
     """
 
-def Stop_split(S):
+
+def stop_split(S):
     """
     Input: a subset S
     Output: a boolean
     """
 
 
-
-
-def first_generation_set_one_step_system_transition():
+def first_generation_set_one_step_system_transition(N):
     """
-    Fisrt strategies for generating sets of one-step system transitions that will be
+    First strategies for generating sets of one-step system transitions that will be
     used in your experiments.
+    We start from an initial state and use a random policy.
+    Each time, we check if a final state is reached, and if it's the case we compute a new initial state.
+
+    :argument
+        N : length of the system
     """
+    count = 0
+    transitions = []
+    x = domain.initial_state()
+    while count < N:
+        u = random_policy(x)
+        r = domain.r(x, u)
+        next_x = domain.f(x, u)
+
+        # add the transition to the set
+        transitions.append([x, u, r, next_x])
+
+        # increment the counter
+        count += 1
+
+        if domain.is_final_state(next_x):
+            # if we reached a final state, we start a new trajectory
+            x = domain.initial_state()
+        else:
+            # otherwise, we continue
+            x = next_x
+
+    # shuffle the set in so it doesn't seems as a trajectory
+    random.shuffle(transitions)
+
+    return transitions
 
 
-def second_generation_set_one_step_system_transition():
+
+def second_generation_set_one_step_system_transition(N):
     """
     Second strategies for generating sets of one-step system transitions that will be
     used in your experiments.
-    """
+    We take a random state in the dynamic, apply a random action and observe a reward and a new state.
+    Each time we save the four-tuple.
 
-
-def Q_0(state, action):
+    :argument
+        N : length of the system
     """
-    initialization of the fitted Q-iteration where 0 is initialize everywhere
-    """
-    return 0
+    trajectory = []
+    count = 0
 
+    while count < N:
+        p = round(np.random.uniform(-1, 1), 2)
+        s = round(np.random.uniform(-3, 3), 2)
+
+        x = np.array([p, s])
+        u = random_policy(x)
+        r = domain.r(x, u)
+        next_x = domain.f(x, u)
+
+        trajectory.append([x, u, r, next_x])
+        count += 1
+
+    return trajectory
 
 
 def dist(function1, function2, F):
@@ -265,7 +311,6 @@ def fitted_Q_iteration_second_stopping_rule(F, regressor, batch_size=0, epoch=0)
         sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
         distance = dist(sequence_Q_N[N], sequence_Q_N[N - 1], F)
     return sequence_Q_N
-
 
 
 if __name__ == '__main__':
