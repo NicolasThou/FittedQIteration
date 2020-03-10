@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import trajectory
 import domain
+import section5 as s5
 
 
 def simulation():
@@ -32,4 +33,6 @@ def simulation():
 
 
 if __name__ == '__main__':
-    pass
+    t = s5.first_generation_set_one_step_system_transition(30)
+    x, y = s5.build_training_set(t, [], 0)
+    print(x)

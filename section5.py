@@ -8,6 +8,8 @@ from keras.layers import Dense
 from keras.layers import Dropout
 import math
 import copy as cp
+import random
+import domain
 
 Br = 1  # bound value for the reward
 
@@ -196,7 +198,7 @@ def dist(function1, function2, F):
     return sum/l
 
 
-def build_training_set(F, Q_N_1):
+def build_training_set(F, Q, N):
     """
     Build the training set in the fitted-Q iteration from F for the
     supervised learning algorithm
@@ -204,28 +206,31 @@ def build_training_set(F, Q_N_1):
     Argument:
     =======
     F : is the four-tuples set
-    Q_N_1 : is the Q_(N-1) functions
+    Q : is the Q_(N-1) functions
 
     Return:
     ======
-    return X (input), and y (output)
+    return inputs and outputs
     """
-    X = []  # input set
-    y = []  # output set
-    a = []  # create empty input
-    b = []  # create empty output
+    inputs = []  # input set
+    outputs = []  # output set
     for tuple in F:
-        input = cp.deepcopy(a)
-        output = cp.deepcopy(b)
-        input.append(tuple[0])  # add x
-        input.append(tuple[1])  # add u
-        maximum = np.max(Q_N_1(tuple[3], 4), Q_N_1(tuple[3], -4))  # action are 4 or -4
-        output.append(tuple[2] + gamma * maximum)  # reward + gamma * Max(Q_N-1) for every action
-        X.append(input)  # add the new sample in the training set
-        y.append(output)  # add the new sample in the training set
-    X = np.array([X])
-    y = np.array([y])
-    return X, y
+        i = [tuple[0], tuple[1]]
+
+        if N == 0:  # First Iteration
+
+            o = tuple[2]
+        else:  # Iteration N>1
+            maximum = np.max(Q_N_1(tuple[3], 4), Q_N_1(tuple[3], -4))  # action are 4 or -4
+            o = tuple[2] + gamma * maximum  # reward + gamma * Max(Q_N-1) for every action
+
+        # add the new sample in the training set
+        inputs.append(i)
+        outputs.append(o)
+
+    inputs = np.array(inputs)
+    outputs = np.array(outputs)
+    return inputs, outputs
 
 
 def fitted_Q_iteration_first_stoppin_rule(F, regressor, batch_size=0, epoch=0):
