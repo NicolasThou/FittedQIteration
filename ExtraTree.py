@@ -25,7 +25,8 @@ def generate_splits(inputs):
     Generates the splits for each attributes
     """
     splits = []
-    for i in range(inputs.shape[1]):
+    inputs = np.array(inputs)
+    for i in range(np.shape(inputs)[1]):
         attributes = inputs[:, i]
 
         s = round(np.random.uniform(np.min(attributes), np.max(attributes)), 2)
@@ -61,12 +62,14 @@ def split_maximize(splits, inputs, outputs):
     """
     Return the index of the split that has a maximum score
     """
-    max = []
+    scores = []
     for index, s in enumerate(splits):
         split_score = score(s, index, inputs, outputs)
-        max.append(split_score)
+        scores.append(split_score)
 
-    return np.max(max), np.argmax(max)
+    ind = np.argmax(scores)
+    cut = round(splits[ind], 2)
+    return cut, ind
 
 
 class Tree:
@@ -75,7 +78,7 @@ class Tree:
     """
     def __init__(self, inputs, outputs, n_min):
         """
-        Generates a Extra-Tree using the pairs input/output
+        Generates an Extra-Tree using the pairs input/output
         """
         self.isLeaf = False
         self.value = None
@@ -96,7 +99,7 @@ class Tree:
 
             left_inputs = []
             left_outputs = []
-            right_intputs = []
+            right_inputs = []
             right_outputs = []
 
             for x, y in zip(inputs, outputs):
@@ -104,22 +107,24 @@ class Tree:
                     left_inputs.append(x)
                     left_outputs.append(y)
                 else:
-                    right_intputs.append(x)
+                    right_inputs.append(x)
                     right_outputs.append(y)
 
             self.left_subtree = Tree(left_inputs, left_outputs, n_min)
-            self.right_subtree = Tree(right_intputs, right_outputs, n_min)
+            self.right_subtree = Tree(right_inputs, right_outputs, n_min)
 
     def __call__(self, x):
         if self.isLeaf is True:
             return self.value
         else:
             if x[self.attribute_index] < self.cut_point:
-                return self.left_subtree.forward(x)
+                return self.left_subtree(x)
             else:
-                return self.right_subtree.forward(x)
+                return self.right_subtree(x)
 
 
 if __name__ == '__main__':
-    t = Tree([[1, 2, 3]], [1.2], 2)
+    i = [[60.45, -3.3, 4.3], [15.1, -2.0, -3.2], [4.23, 13.3, 6.0], [-7.2, -1.3, 9.3]]
+    o = [4, 3, 5, 8]
+    t = Tree(i, o, 2)
     print(t([3, 4, 5]))
