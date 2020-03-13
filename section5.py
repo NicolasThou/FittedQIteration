@@ -70,52 +70,6 @@ def accuracy_neural_network(X_train, y_train, X_test, y_test):
     print(best_score)
 
 
-
-"""
-The algorithm of extremely_randomized_trees is coding thanks to the article : Extremely randomized trees
-Pierre Geurts · Damien Ernst · Louis Wehenkel (2 March 2006).
-
-"
-The term attribute denotes a particular input variable used in a
-supervised learning problem. The candidate attributes denote all input variables that are
-available for a given problem. We use the term output to refer to the target variable that
-defines the supervised learning problem. 
-
-The term learning sample denotes the observations used to build a model, and the term test
-sample the observations used to compute its accuracy (error-rate, or mean square-error).
-N refers to the size of the learning sample, i.e., its number of observations, and n refers to
-the number of candidate attributes, i.e., the dimensionality of the input space. "
-
-"""
-
-
-def extremely_randomized_trees():
-    """
-    implement the extra trees algorithm
-    """
-
-
-def split_a_node(S):
-    """
-    Input: the local learning subset S corresponding to the node we want to split
-    Output: a split [a < ac] or nothing
-    """
-
-
-def pick_a_random_split(S, a):
-    """
-    Inputs: a subset S and an attribute a
-    Output: a split
-    """
-
-
-def stop_split(S):
-    """
-    Input: a subset S
-    Output: a boolean
-    """
-
-
 def first_generation_set_one_step_system_transition(N):
     """
     First strategies for generating sets of one-step system transitions that will be
@@ -151,7 +105,6 @@ def first_generation_set_one_step_system_transition(N):
     random.shuffle(transitions)
 
     return transitions
-
 
 
 def second_generation_set_one_step_system_transition(N):
