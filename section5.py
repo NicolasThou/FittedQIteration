@@ -101,7 +101,7 @@ def first_generation_set_one_step_system_transition(N):
             # otherwise, we continue
             x = next_x
 
-    # shuffle the set in so it doesn't seems as a trajectory
+    # shuffle the set in so the samples are not correlated
     random.shuffle(transitions)
 
     return transitions
@@ -151,7 +151,7 @@ def dist(function1, function2, F):
     return sum/l
 
 
-def build_training_set(F, Q, N):
+def build_training_set(F, Q_N_1, N):
     """
     Build the training set in the fitted-Q iteration from F for the
     supervised learning algorithm
@@ -168,13 +168,14 @@ def build_training_set(F, Q, N):
     inputs = []  # input set
     outputs = []  # output set
     for tuple in F:
-        i = [tuple[0], tuple[1]]
+        i = [tuple[0][0], tuple[0][1], tuple[1]]
 
         if N == 0:  # First Iteration
-
             o = tuple[2]
         else:  # Iteration N>1
-            maximum = np.max(Q_N_1(tuple[3], 4), Q_N_1(tuple[3], -4))  # action are 4 or -4
+            x0 = [tuple[3][0], tuple[3][1], 4]
+            x1 = [tuple[3][0], tuple[3][1], -4]
+            maximum = np.max([Q_N_1([x0]), Q_N_1([x1])])  # action are 4 or -4
             o = tuple[2] + gamma * maximum  # reward + gamma * Max(Q_N-1) for every action
 
         # add the new sample in the training set
