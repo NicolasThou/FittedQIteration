@@ -6,7 +6,6 @@ from sklearn.model_selection import GridSearchCV
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
-import math
 import copy as cp
 import random
 import domain
@@ -219,7 +218,7 @@ def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.01, b
     """
         Iteration
     """
-    max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma))) + 1
+    max = int(np.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (np.log(gamma))) + 1
     while N < max:
         N = N + 1
         model = cp.deepcopy(algorithm)
@@ -298,7 +297,7 @@ if __name__ == '__main__':
     print()
     print('My own test')
     tolerance_fixed = 0.01
-    max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma)))  # equal to 220
+    max = int(np.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (np.log(gamma)))  # equal to 220
     print(max)
 
 
