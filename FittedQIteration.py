@@ -11,11 +11,12 @@ if __name__ == '__main__':
     trajectory = [S5.first_generation_set_one_step_system_transition(500),
                   S5.second_generation_set_one_step_system_transition(500)]
 
-    plt.subplot(2, 2)
+    fig, ax = plt.subplots(2, 2)
+
     for number, h in enumerate(trajectory):
 
         # horizon of Q
-        q_N = 5
+        q_N = 15
 
         # Q functions
         Q_tree = []
@@ -25,7 +26,7 @@ if __name__ == '__main__':
             TRAINING
         """
         # iteration N=1
-        X, Y = S5.build_training_set(h, None, 0)
+        X, Y = S5.build_training_set(h, None, 1)
 
         # add new models
         Q_tree.append(SET.SkExtraTree(n_trees=50, n_min=2))
@@ -52,7 +53,7 @@ if __name__ == '__main__':
         tree_error = []
         reg_error = []
 
-        n = range(q_N)
+        n = range(q_N-1)
         for i in n:
             tree_n_error = []
             reg_n_error = []
@@ -68,11 +69,9 @@ if __name__ == '__main__':
             tree_error.append(np.mean(tree_n_error))
             reg_error.append(np.mean(reg_n_error))
 
-        plt.subplot(number+1, 1)
-        plt.plot(n, tree_error)
+        ax[number, 0].plot(n, tree_error)
 
-        plt.subplot(number+1, 2)
-        plt.plot(n, reg_error)
+        ax[number, 1].plot(n, reg_error)
 
     plt.show()
 

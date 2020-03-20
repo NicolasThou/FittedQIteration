@@ -3,7 +3,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 
 
 class SkExtraTree(ExtraTreesRegressor):
-    def __init__(self, n_trees, n_min):
+    def __init__(self, n_trees=50, n_min=2):
         super().__init__(n_estimators=n_trees, min_samples_split=n_min)
 
     def __call__(self, X):

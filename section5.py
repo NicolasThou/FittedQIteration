@@ -145,8 +145,9 @@ def dist(function1, function2, F):
     """
     sum = 0
     l = len(F)  # only F is a list, whereas use np.shape if it is an array
-    for tuple in F:
-        difference = (function1(tuple[0], tuple[1]) - function2(tuple[0], tuple[1]))**2
+    for sample in F:
+        X = [[sample[0][0], sample[0][1], sample[1]]]
+        difference = (function1(X) - function2(X))**2
         sum += difference
     return sum/l
 
@@ -170,7 +171,7 @@ def build_training_set(F, Q_N_1, N):
     for tuple in F:
         i = [tuple[0][0], tuple[0][1], tuple[1]]
 
-        if N == 0:  # First Iteration
+        if N == 1:  # First Iteration
             o = tuple[2]
         else:  # Iteration N>1
             x0 = [tuple[3][0], tuple[3][1], 4]
@@ -187,7 +188,7 @@ def build_training_set(F, Q_N_1, N):
     return inputs, outputs
 
 
-def fitted_Q_iteration_first_stoppin_rule(F, regressor, batch_size=0, epoch=0):
+def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.01, batch_size=None, epoch=None):
     """
     Implement the fitted-Q Iteration Algorithm with as stopping rule a maximum N
     computed by fixing a tolerance
@@ -195,36 +196,47 @@ def fitted_Q_iteration_first_stoppin_rule(F, regressor, batch_size=0, epoch=0):
     Argument:
     ========
     F : is the four-tuples set
-    Regressor : is the supervised learning algorithm
+    algorithm : is the initializer of a supervised learning algorithm
+    tolerance_fixed : is the threshold under which fall the infinite norm of the difference of the expected return function
 
     Return:
     ======
     Return the sequence of approximation of Q_N function
     """
 
-    # Initialization
-
-    sequence_Q_N = []  # sequence of approximation of Q_N functions
-    sequence_Q_N.add(Q_0)  # we add the Q_0 function which return 0 everywhere
+    """
+        Initialization
+    """
+    # defining Q0
+    X, Y = [[0, 0, 0]], [0]
+    Q_0 = cp.deepcopy(algorithm)
+    Q_0.fit(X, Y)
+    # sequence of approximation of Q_N functions
+    sequence_Q_N = [Q_0]  # we add the Q_0 function which return 0 everywhere
     N = 0
 
-    # Iteration
 
-    tolerance_fixed = 0.01
-    max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma)))  # equal to 220
-
+    """
+        Iteration
+    """
+    max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma))) + 1
     while N < max:
         N = N + 1
-        X, y = build_training_set(F, sequence_Q_N[N-1])
-        if batch_size != 0 and epoch != 0:  # means that we use a neural network as a supervised learning algorithm
-            regressor.fit(X, y, batch_size=batch_size, epochs=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
-        else:  # means that we use extra trees or logistic regression
-            regressor.fit(X, y)
-        sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
+        model = cp.deepcopy(algorithm)
+
+        X, Y = build_training_set(F, sequence_Q_N[N-1], N)
+        if batch_size is not None and epoch is not None:  # means that we use a neural network as a supervised learning algorithm
+            model.fit(X, Y, batch_size=batch_size, epochs=epoch)
+        else:  # means that we use extra trees or linear regression
+            model.fit(X, Y)
+
+        # add of the Q_N function in the sequence of Q_N functions
+        sequence_Q_N.append(model)
+
     return sequence_Q_N
 
 
-def fitted_Q_iteration_second_stopping_rule(F, regressor, batch_size=0, epoch=0):
+def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, batch_size=None, epoch=None):
     """
     Implement the fitted-Q Iteration Algorithm with the stopping rule as
     the distance bewteen Q_N and Q_N-1
@@ -232,42 +244,52 @@ def fitted_Q_iteration_second_stopping_rule(F, regressor, batch_size=0, epoch=0)
     Argument:
     ========
     F : is the four-tuples set
-    Regressor : is the supervised learning algorithm
+    algorithm : is the initializer of a supervised learning algorithm
+    tolerance_fixed : is the threshold under which fall the infinite norm of the difference of the expected return function
 
     Return:
     ======
     Return the sequence of approximation of Q_N function
     """
 
-    # Initialization
-
+    """
+        Initialization
+    """
     sequence_Q_N = []  # sequence of approximation of Q_N functions
-    sequence_Q_N.add(Q_0)  # we add the Q_0 function which return 0 everywhere
+    # defining Q0
+    X, Y = [[0, 0, 0]], [0]
+    Q_0 = cp.deepcopy(algorithm)
+    Q_0.fit(X, Y)
+    # sequence of approximation of Q_N functions
+    sequence_Q_N = [Q_0]  # we add the Q_0 function which return 0 everywhere
 
-    # First iteration
+    """
+        First iteration
+    """
     N = 1
-    X, y = build_training_set(F, sequence_Q_N[N - 1])
-    if batch_size != 0 and epoch != 0:
-        regressor.fit(X, y, batch_size=batch_size,
-                      epoch=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
+    X, y = build_training_set(F, sequence_Q_N[N - 1], N)
+    model = cp.deepcopy(algorithm)
+    if batch_size is not None and epoch is not None:
+        model.fit(X, y, batch_size=batch_size, epoch=epoch)
     else:
-        regressor.fit(X, y)
-    sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
+        model.fit(X, y)
+    sequence_Q_N.append(model)  # add of the Q_N function in the sequence of Q_N functions
 
-    # Iteration for N > 1
+    """
+        Iteration for N > 1
+    """
     distance = dist(sequence_Q_N[N], sequence_Q_N[N-1], F)
-    print("the first distance is : ")
-    print(distance)
-    tolerance_fixed = 0.01
-    while distance > tolerance_fixed:
+
+    while distance > tolerance_fixed and N <= 50:   # TODO : somme supervised learning algorithm don't provides the convergence !!!
         N = N + 1
-        X, y = build_training_set(F, sequence_Q_N[N - 1])
-        if batch_size != 0 and epoch != 0:
-            regressor.fit(X, y, batch_size=batch_size,
-                          epochs=epoch)  # regressor is an argument, might be copy before fitting and add in the sequence ?
+        model = cp.deepcopy(algorithm)
+        X, y = build_training_set(F, sequence_Q_N[N - 1], N)
+
+        if batch_size is not None and epoch is not None:
+            model.fit(X, y, batch_size=batch_size, epochs=epoch)
         else:
-            regressor.fit(X, y)
-        sequence_Q_N.add(regressor)  # add of the Q_N function in the sequence of Q_N functions
+            model.fit(X, y)
+        sequence_Q_N.append(model)  # add of the Q_N function in the sequence of Q_N functions
         distance = dist(sequence_Q_N[N], sequence_Q_N[N - 1], F)
     return sequence_Q_N
 
