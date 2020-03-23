@@ -1,72 +1,29 @@
-import numpy as np
-from Section2 import *
-from keras.wrappers.scikit_learn import KerasRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
+import numpy as np
 import copy as cp
 import random
 import domain
+import trajectory
+
 
 Br = 1  # bound value for the reward
 
 
-def neural_network():
+def baseline_model():
     """
-    Build the baseline for an artificial neural network with keras
+    define base model for artificial neural network
     """
-    regressor = Sequential()
-    regressor.add(Dense(units=4, input_dim=3, kernel_initializer='random_uniform', activation='relu'))
-    regressor.add(Dropout(rate=0.1))  # avoid overfitting
-    regressor.add(Dense(units=4, kernel_initializer='random_uniform', activation='relu'))
-    regressor.add(Dropout(rate=0.1))  # avoid overfitting
-    regressor.add(Dense(units=1, kernel_initializer='random_uniform', activation='linear'))
-    regressor.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-    return regressor
+    # create model
+    model = Sequential()
+    model.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
+    model.add(Dropout(0.4))  # avoid overfitting
+    model.add(Dense(1, kernel_initializer='normal'))
 
-
-def accuracy_neural_network(X_train, y_train, X_test, y_test):
-    """
-    test the regressor Ann, with a K-folds cross validation method
-
-    Return:
-    ======
-    print the average accuracy, confusion matrix, the best score obtain by the best parameters
-
-    """
-
-    # use of confusion matrix
-
-    regressor = neural_network()
-    regressor.fit(X_train, y_train, batch_size=2, epochs=2)
-    y_pred = regressor.predict(X_test)
-
-
-    # use of k-fold cross validation
-
-    regressor = KerasRegressor(build_fn=neural_network, batch_size=10, nb_epoch=100)
-    accuracies = cross_val_score(estimator=regressor, X=X_train, y=y_train, cv=3, n_jobs=-1)
-    mean = accuracies.mean()
-    variance = accuracies.std()
-    print('The mean of accuracy is : {}' .format(mean))
-    print('The variance is : {}' .format(variance))
-
-
-
-    # use of GridSearchCV method to find the best hyperparameters epoch, batch_size and the best optimizer
-
-    regressor2 = KerasRegressor(build_fn=neural_network)
-    parameters = {'batch_size' : [10, 20, 30],
-                  'nb_epoch': [100, 200, 300],
-                  'optimizer': ['adam', 'rmsprop']}  # we test different parameters
-    grid_search = GridSearchCV(estimator=regressor2, param_grid=parameters, scoring='accuracy', cv=3)
-    grid_search.fit(X_train, y_train)
-    best_param = grid_search.best_params_
-    best_score = grid_search.best_score_
-    print(best_param)
-    print(best_score)
+    # Compile model
+    model.compile(loss='mean_squared_error', optimizer='rmsprop', metrics=['mse'])
+    return model
 
 
 def first_generation_set_one_step_system_transition(N):
@@ -83,7 +40,7 @@ def first_generation_set_one_step_system_transition(N):
     transitions = []
     x = domain.initial_state()
     while count < N:
-        u = random_policy(x)
+        u = trajectory.random_policy(x)
         r = domain.r(x, u)
         next_x = domain.f(x, u)
 
@@ -116,7 +73,8 @@ def second_generation_set_one_step_system_transition(N):
     :argument
         N : length of the system
     """
-    trajectory = []
+    # history of four-tuples
+    ht = []
     count = 0
 
     while count < N:
@@ -124,14 +82,14 @@ def second_generation_set_one_step_system_transition(N):
         s = round(np.random.uniform(-3, 3), 2)
 
         x = np.array([p, s])
-        u = random_policy(x)
+        u = trajectory.random_policy(x)
         r = domain.r(x, u)
         next_x = domain.f(x, u)
 
-        trajectory.append([x, u, r, next_x])
+        ht.append([x, u, r, next_x])
         count += 1
 
-    return trajectory
+    return ht
 
 
 def dist(function1, function2, F):
@@ -146,12 +104,12 @@ def dist(function1, function2, F):
     l = len(F)  # only F is a list, whereas use np.shape if it is an array
     for sample in F:
         X = [[sample[0][0], sample[0][1], sample[1]]]
-        difference = (function1(X) - function2(X))**2
+        difference = (function1.predict(X) - function2.predict(X))**2
         sum += difference
     return sum/l
 
 
-def build_training_set(F, Q_N_1, N):
+def build_training_set(F, Q_N_1):
     """
     Build the training set in the fitted-Q iteration from F for the
     supervised learning algorithm
@@ -170,13 +128,13 @@ def build_training_set(F, Q_N_1, N):
     for tuple in F:
         i = [tuple[0][0], tuple[0][1], tuple[1]]
 
-        if N == 1:  # First Iteration
+        if Q_N_1 is None:  # First Iteration
             o = tuple[2]
-        else:  # Iteration N>1
-            x0 = [tuple[3][0], tuple[3][1], 4]
-            x1 = [tuple[3][0], tuple[3][1], -4]
-            maximum = np.max([Q_N_1([x0]), Q_N_1([x1])])  # action are 4 or -4
-            o = tuple[2] + gamma * maximum  # reward + gamma * Max(Q_N-1) for every action
+        else:  # Iteration N > 1
+            x0 = np.array([[tuple[3][0], tuple[3][1], 4]])
+            x1 = np.array([[tuple[3][0], tuple[3][1], -4]])
+            maximum = np.max([Q_N_1.predict(x0).item(), Q_N_1.predict(x1).item()])  # action are 4 or -4
+            o = tuple[2] + domain.gamma * maximum  # reward + gamma * Max(Q_N-1) for every action
 
         # add the new sample in the training set
         inputs.append(i)
@@ -187,7 +145,7 @@ def build_training_set(F, Q_N_1, N):
     return inputs, outputs
 
 
-def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.01, batch_size=None, epoch=None):
+def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.001, batch_size=None, epoch=None):
     """
     Implement the fitted-Q Iteration Algorithm with as stopping rule a maximum N
     computed by fixing a tolerance
@@ -206,31 +164,34 @@ def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.01, b
     """
         Initialization
     """
-    # defining Q0
-    X, Y = [[0, 0, 0]], [0]
-    Q_0 = cp.deepcopy(algorithm)
-    Q_0.fit(X, Y)
     # sequence of approximation of Q_N functions
-    sequence_Q_N = [Q_0]  # we add the Q_0 function which return 0 everywhere
-    N = 0
-
+    sequence_Q_N = []
 
     """
         Iteration
     """
-    max = int(np.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (np.log(gamma))) + 1
+    max = int(np.log(tolerance_fixed * ((1 - domain.gamma) ** 2) / (2 * Br)) / (np.log(domain.gamma))) + 1
+    N = 0
+
     while N < max:
-        N = N + 1
+        # we create a new empty model
         model = cp.deepcopy(algorithm)
 
-        X, Y = build_training_set(F, sequence_Q_N[N-1], N)
+        # check if we are in the first step or not
+        previous_Q = sequence_Q_N[N-1] if len(sequence_Q_N) > 0 else None
+
+        # get the training step built with the trajectory
+        X, Y = build_training_set(F, previous_Q)
+
         if batch_size is not None and epoch is not None:  # means that we use a neural network as a supervised learning algorithm
-            model.fit(X, Y, batch_size=batch_size, epochs=epoch)
+            model.fit(X, Y, batch_size=batch_size, epochs=epoch, verbose=0)
         else:  # means that we use extra trees or linear regression
             model.fit(X, Y)
 
         # add of the Q_N function in the sequence of Q_N functions
         sequence_Q_N.append(model)
+
+        N = N + 1
 
     return sequence_Q_N
 
@@ -251,27 +212,19 @@ def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, 
     Return the sequence of approximation of Q_N function
     """
 
-    """
-        Initialization
-    """
     sequence_Q_N = []  # sequence of approximation of Q_N functions
-    # defining Q0
-    X, Y = [[0, 0, 0]], [0]
-    Q_0 = cp.deepcopy(algorithm)
-    Q_0.fit(X, Y)
-    # sequence of approximation of Q_N functions
-    sequence_Q_N = [Q_0]  # we add the Q_0 function which return 0 everywhere
 
     """
         First iteration
     """
     N = 1
-    X, y = build_training_set(F, sequence_Q_N[N - 1], N)
+    X, y = build_training_set(F, sequence_Q_N[N - 1])
     model = cp.deepcopy(algorithm)
     if batch_size is not None and epoch is not None:
         model.fit(X, y, batch_size=batch_size, epoch=epoch)
     else:
         model.fit(X, y)
+
     sequence_Q_N.append(model)  # add of the Q_N function in the sequence of Q_N functions
 
     """
@@ -280,72 +233,26 @@ def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, 
     distance = dist(sequence_Q_N[N], sequence_Q_N[N-1], F)
 
     while distance > tolerance_fixed and N <= 50:   # TODO : somme supervised learning algorithm don't provides the convergence !!!
-        N = N + 1
+        # we create a new empty model
         model = cp.deepcopy(algorithm)
-        X, y = build_training_set(F, sequence_Q_N[N - 1], N)
+
+        # build the training set
+        X, y = build_training_set(F, sequence_Q_N[N - 1])
 
         if batch_size is not None and epoch is not None:
             model.fit(X, y, batch_size=batch_size, epochs=epoch)
         else:
             model.fit(X, y)
-        sequence_Q_N.append(model)  # add of the Q_N function in the sequence of Q_N functions
+
+        # add of the Q_N function in the sequence of Q_N functions
+        sequence_Q_N.append(model)
         distance = dist(sequence_Q_N[N], sequence_Q_N[N - 1], F)
+
+        N = N + 1
+
     return sequence_Q_N
 
 
 if __name__ == '__main__':
-    print()
-    print('My own test')
-    tolerance_fixed = 0.01
-    max = int(np.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (np.log(gamma)))  # equal to 220
-    print(max)
-
-
-    ann = neural_network()
-    X_train = np.array([[0.5, 2, 4], [-0.5, 2.2, 4], [0.4, 2, -4], [0.6, 2, -4]])
-    print(np.shape(X_train))
-    X_test = np.array([[0.4, 2, -4], [0.5, 1, -4], [0.5, 1, 4], [0.98, 2, 4]])
-    y_train = [1, 0, -1, 1]
-    y_test = [-1, 0, 0, -1]
-    print(X_train)
-    print(X_test)
-    print(y_train)
-    print(y_test)
-
-
-
-    accuracy_neural_network(X_train, y_train, X_test, y_test)
-
-    print()
-    print('------ First strategies for generating sets of one-step system transitions --------')
-    print()
-
-    print()
-    print('------- Second strategies for generating sets of one-step system transitions ---------')
-    print()
-
-    print()
-    print('------------ Q_N with the first stopping rules --------------')
-    print()
-
-    print()
-    print('------------- Q_N with the second stopping rules ----------------')
-    print()
-
-    print()
-    print('----------- Display of Q_N using Linear Logistic Regression -------------')
-    print()
-
-    print()
-    print('------------- Display of Q_N using Extremely Randomized Tree -------------- ')
-    print()
-
-    print()
-    print('------------- Display of Q_N using Neural Network ----------------- ')
-    print()
-
-    print()
-    print('------------------ J_N Expected return of µ^*_N ------------------- ')
-    print()
-
+    pass
 

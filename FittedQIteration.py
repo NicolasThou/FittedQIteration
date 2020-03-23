@@ -1,9 +1,8 @@
-import ScikitExtraTree as SET
-import ScikitLinearRegression as SLR
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.linear_model import LinearRegression
 import numpy as np
 from matplotlib import pyplot as plt
 import section5 as S5
-import domain
 
 
 if __name__ == '__main__':
@@ -14,7 +13,10 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(2, 2)
 
     for number, h in enumerate(trajectory):
-
+        """
+            Compare the models along a trajectory.
+            We train them and test them. 
+        """
         # horizon of Q
         q_N = 15
 
@@ -29,8 +31,8 @@ if __name__ == '__main__':
         X, Y = S5.build_training_set(h, None, 1)
 
         # add new models
-        Q_tree.append(SET.SkExtraTree(n_trees=50, n_min=2))
-        Q_reg.append(SLR.SkLinearRegression())
+        Q_tree.append(ExtraTreesRegressor())
+        Q_reg.append(LinearRegression())
 
         # train the models
         Q_tree[0].fit(X, Y)
@@ -41,8 +43,8 @@ if __name__ == '__main__':
             X_tree, Y_tree = S5.build_training_set(h, Q_tree[i-1], i)
             X_reg, Y_reg = S5.build_training_set(h, Q_reg[i-1], i)
 
-            Q_tree.append(SET.SkExtraTree(n_trees=50, n_min=2))
-            Q_reg.append(SLR.SkLinearRegression())
+            Q_tree.append(ExtraTreesRegressor())
+            Q_reg.append(LinearRegression())
 
             Q_tree[i].fit(X_tree, Y_tree)
             Q_reg[i].fit(X_reg, Y_reg)

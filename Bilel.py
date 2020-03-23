@@ -1,14 +1,11 @@
 import numpy as np
+import random
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
-import random
-from joblib import dump, load
+from joblib import load
 import trajectory
 import domain
-import section5 as s5
-import ScikitLinearRegression as SLR
-import ScikitExtraTree as SET
 
 
 def simulation():
@@ -56,7 +53,7 @@ def visualize_Q(name, model):
             q_s = []
             for p in p_space:
                 # apply the model on both action for this state
-                q_s.append(round(model([[p, s, u]]).item(), 2))
+                q_s.append(round(model.predict([[p, s, u]]).item(), 2))
 
             q.append(q_s)
 
@@ -100,7 +97,11 @@ def compute_J(state, model, N):
         return 0
     else:
         p, s = state[0], state[1]
-        q = [model([[p, s, 4]]), model([[p, s, -4]])]
+
+        # compute which action leads to best Q value
+        first_action_input = np.array([[p, s, 4]])
+        second_action_input = np.array([[p, s, -4]])
+        q = [model.predict(first_action_input), model.predict(second_action_input)]
         if np.argmax(q) == 0:
             mu = 4
         else:
@@ -115,11 +116,14 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
     """
     # compute the n minimum for which Jn is a good approximation of J
     N = int(np.ceil(np.log(error_threshold*(1 - domain.gamma))/np.log(domain.gamma)))
+    print(N)
+
+    # we compute the expected return for a maximum of 50 models
     n = min(50, len(models))
 
     # set of states X used to have an approximation of J
-    p_values = [round(random.uniform(-1, 1), 2) for i in range(15)]
-    s_values = [round(random.uniform(-3, 3), 2) for i in range(15)]
+    p_values = [round(random.uniform(-1, 1), 2) for i in range(5)]
+    s_values = [round(random.uniform(-3, 3), 2) for i in range(5)]
 
     # values of J along N
     j = []
@@ -129,6 +133,7 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
 
         expected_return_over_X = []
 
+        # we compute the expected return for a certain number of states, and take the average
         for p in p_values:
             for s in s_values:
                 expected_return = compute_J((p, s), models[i], N)
@@ -137,6 +142,7 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
 
         j.append(np.mean(expected_return_over_X))
 
+    # plot the expected return along N
     plt.plot(range(n), j)
     plt.xlabel('N')
     plt.ylabel('$J^{\hat{\mu_{N}^{*}}}$', rotation=0)
@@ -145,20 +151,13 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
 
 
 if __name__ == '__main__':
-    models_name = ['regression_800_first_1',
-                   'regression_800_first_2',
-                   'regression_800_second_1',
-                   'regression_800_second_2',
-                   'tree_800_first_1',
-                   'tree_800_first_2',
-                   'tree_800_second_1',
-                   'tree_800_second_2'
+    models_path = 'models/'
+    models_name = ['neural_net_2.joblib'
                    ]
 
     for name in models_name:
         print(name)
-        model = load('models/' + name + '.joblib')
-        # visualize_expected_return_policy(name + '.png', model, error_threshold=1)
-        visualize_Q(name + 'png', model[-1])
+        model = load(models_path + name)
+        visualize_expected_return_policy(name + '.png', model, error_threshold=1)
 
 
