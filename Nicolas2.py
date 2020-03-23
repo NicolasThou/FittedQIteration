@@ -1,17 +1,14 @@
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
+from keras.models import load_model
 from keras import metrics
-from keras.wrappers.scikit_learn import KerasRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 import math
 import random
 import domain
 import numpy as np
 from Section2 import *
+from Bilel import *
 
 
 Br = 1  # bound value for the reward
@@ -104,14 +101,6 @@ def build_training_set(F, Q_N_1):
 
     return inputs, outputs
 
-print("========================TEST OF FIRST ITERATION WITH Q_0====================")
-
-F_test = first_generation_set_one_step_system_transition(1000)
-q0 = Q_0()
-X_train1, Y_train1 = build_training_set(F_test, q0)
-
-print("=======================================================================================")
-
 
 # define base model for artificial neural network
 def baseline_model():
@@ -120,10 +109,9 @@ def baseline_model():
     model.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
     model.add(Dropout(0.4))  # avoid overfitting
     model.add(Dense(1, kernel_initializer='normal'))
-    model.add(Dropout(0.4))
 
     # Compile model
-    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['acc'])
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
     return model
 
 
@@ -158,6 +146,7 @@ def fitted_Q_iteration_first_stoppin_rule(F, batch_size, epoch):
     # Iteration
     tolerance_fixed = 0.01
     max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma))) + 1  # equal to 220
+
     while N < max:
         print('======================= ITERATION =====================')
         print("Iteration numéro : {}" .format(N))
@@ -169,31 +158,6 @@ def fitted_Q_iteration_first_stoppin_rule(F, batch_size, epoch):
         N = N + 1
 
     return sequence_Q_N
-
-
-print("===============================TEST NEXT ITERATION WITH ANN =============================================")
-
-regressor_test = baseline_model()
-regressor_test.fit(X_train1, Y_train1, batch_size=10, epochs=20)
-X_train2, Y_train2 = build_training_set(F_test, regressor_test)
-
-"""
-test = np.array([[2, 0.54, 4]])
-print(type(regressor.predict(test)))
-print(regressor.predict(test)[0])
-print(regressor.predict(test)[0][0])
-"""
-print("=======================================================================================")
-
-
-
-print("======================== Test of the Algorithm for 220 Iteration =================================")
-
-#list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 20)
-
-print("=======================================================================================")
-
-
 
 
 def dist(function1, function2, F):
@@ -211,10 +175,6 @@ def dist(function1, function2, F):
         difference = (function1.predict(input)[0][0] - function2.predict(input)[0][0])**2
         sum += difference
     return sum/l
-
-
-distance_test = dist(regressor_test, q0, F_test)
-print(distance_test)
 
 
 def fitted_Q_iteration_second_stopping_rule(F, batch_size, epoch):
@@ -269,17 +229,135 @@ def fitted_Q_iteration_second_stopping_rule(F, batch_size, epoch):
     return sequence_Q_N
 
 
-print("============= Test for the fitted Q iteration for the distance stopping rule ==========")
+"""
+=======================================================================
+======================== BILEL PART MODIFIED ==========================
+=======================================================================
+"""
 
 
-fitted_Q_iteration_second_stopping_rule(F_test, 10, 100)
+def visualize_Q(name, model, type_of_regressor=0):
+    """
+    Plot the Q values (for both actions)
+    """
+
+    # used to have an approximation of Q along the state space
+    p_space = [i/10 for i in range(-10, 11, 1)]
+    s_space = [i/10 for i in range(-30, 30, 3)]
+
+    # store the values of the q-functions
+    q_functions = []
+
+    for u in [4, -4]:
+        q = []
+        for s in s_space:
+            q_s = []
+            for p in p_space:
+                # apply the model on both action for this state
+                if type_of_regressor != 1:
+                    q_s.append(round(model([[p, s, u]]).item(), 2))
+                else:
+                    input = np.array([[p, s, u]])
+                    q_s.append(round(model.predict(input)[0][0], 2))
+
+            q.append(q_s)
+
+        q_functions.append(q)
+
+    vmin, vmax = np.amin(q_functions), np.amax(q_functions)
+
+    fig, ax = plt.subplots(1, 2)
+
+    for i, q in enumerate(q_functions):
+        # plot the q-function as a heatmap
+        heatmap = ax[i].imshow(q)
+
+        # annotate the axes
+        ax[i].set_xlabel('p')
+        ax[i].set_ylabel('s', rotation=0)
+        ax[i].set_xticks((np.arange(5)/4)*(np.shape(q)[1] - 1))
+        ax[i].set_yticks((np.arange(7)/6)*(np.shape(q)[0] - 1))
+        ax[i].set_xticklabels([-1, 0.5, 0, 0.5, 1])
+        ax[i].set_yticklabels([-3, -2, -1, 0, 1, 2, 3])
+
+        # make the values of both image fall into the same range
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+        heatmap.set_norm(norm)
+
+        # display the color map above this heatmap
+        divider = make_axes_locatable(ax[i])
+        cax = divider.append_axes("top", size="7%", pad="2%")
+        colorbar = fig.colorbar(heatmap, cax=cax, orientation='horizontal')
+        cax.xaxis.set_ticks_position("top")
+
+    fig.suptitle('Q-functions : $\hat{Q}_{4}$ in the left and $\hat{Q}_{-4}$ in the right for '+ name)
+    plt.savefig(name)
+    plt.show()
 
 
-print("=======================================================================================")
-
-
-
+"""
+=======================================================================
+=======================================================================
+=======================================================================
+"""
 
 if __name__ == '__main__':
-    print("hello world")
+
+    print("========================TEST OF FIRST ITERATION WITH Q_0===============================")
+
+    F_test = first_generation_set_one_step_system_transition(200)
+    q0 = Q_0()
+    X_train1, Y_train1 = build_training_set(F_test, q0)
+
+    print("=======================================================================================")
+    print("===============================TEST NEXT ITERATION WITH ANN ===========================")
+    print("=======================================================================================")
+
+    regressor_test = baseline_model()
+    regressor_test.fit(X_train1, Y_train1, batch_size=10, epochs=20)
+    X_train2, Y_train2 = build_training_set(F_test, regressor_test)
+    print(X_train2)
+    print(np.shape(X_train2))
+    print(Y_train2)
+    print(np.shape(Y_train2))
+
+    """
+    test = np.array([[2, 0.54, 4]])
+    print(type(regressor.predict(test)))
+    print(regressor.predict(test)[0])
+    print(regressor.predict(test)[0][0])
+    """
+    print("=======================================================================================")
+    print("======================== Test of the Algorithm for 220 Iteration ======================")
+    print("=======================================================================================")
+
+    # comment or uncomment this line of code to test this stopping rule
+    #list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 20)
+    #list_of_regressor[-1].save("model1.h5")
+    #print("Saved model to disk")
+
+    print("=======================================================================================")
+    print("============================= TEST distance ===========================================")
+    print("=======================================================================================")
+
+    distance_test = dist(regressor_test, q0, F_test)
+    print(distance_test)
+
+    print("=======================================================================================")
+    print("============= Test for the fitted Q iteration for the distance stopping rule ==========")
+    print("=======================================================================================")
+
+    # comment or uncomment this line of code to test this stopping rule
+    #list_of_regressor2 = fitted_Q_iteration_second_stopping_rule(F_test, 10, 100)
+    #list_of_regressor2[-1].save("model2.h5")
+    #print("Saved model to disk 2")
+
+    print("=======================================================================================")
+    print("===================================Test Visualize Q ===================================")
+    print("=======================================================================================")
+
+    model1 = load_model('model1.h5')
+    model2 = load_model('model2.h5')
+    visualize_Q('ANN_First_Stopping_rule', model1, 1)
+    visualize_Q('ANN_Second_Stopping_rule', model2, 1)
 
