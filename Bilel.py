@@ -1,9 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import colors
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
-import seaborn as sns
+import random
 from joblib import dump, load
 import trajectory
 import domain
@@ -39,7 +38,7 @@ def simulation():
     return p, s
 
 
-def visualize_Q(model):
+def visualize_Q(name, model):
     """
     Plot the Q values (for both actions)
     """
@@ -63,6 +62,8 @@ def visualize_Q(model):
 
         q_functions.append(q)
 
+    vmin, vmax = np.amin(q_functions), np.amax(q_functions)
+
     fig, ax = plt.subplots(1, 2)
 
     for i, q in enumerate(q_functions):
@@ -77,6 +78,10 @@ def visualize_Q(model):
         ax[i].set_xticklabels([-1, 0.5, 0, 0.5, 1])
         ax[i].set_yticklabels([-3, -2, -1, 0, 1, 2, 3])
 
+        # make the values of both image fall into the same range
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+        heatmap.set_norm(norm)
+
         # display the color map above this heatmap
         divider = make_axes_locatable(ax[i])
         cax = divider.append_axes("top", size="7%", pad="2%")
@@ -84,6 +89,7 @@ def visualize_Q(model):
         cax.xaxis.set_ticks_position("top")
 
     fig.suptitle('Q-functions : $\hat{Q}_{4}$ in the left and $\hat{Q}_{-4}$ in the right.', fontsize=14)
+    plt.savefig('plots/Q/' + name)
     plt.show()
 
 
@@ -99,46 +105,60 @@ def compute_J(state, model, N):
             mu = 4
         else:
             mu = -4
+
         return domain.r(state, mu) + domain.gamma*compute_J(domain.f(state, mu), model, N-1)
 
 
-def visualize_expected_return_policy(models, error_threshold=0.1):
+def visualize_expected_return_policy(name, models, error_threshold=0.1):
     """
     Plot the expected return of a policy (Q-function)
     """
     # compute the n minimum for which Jn is a good approximation of J
     N = int(np.ceil(np.log(error_threshold*(1 - domain.gamma))/np.log(domain.gamma)))
+    n = min(50, len(models))
 
     # set of states X used to have an approximation of J
-    values = np.arange(-10, 15, 5)/10
+    p_values = [round(random.uniform(-1, 1), 2) for i in range(15)]
+    s_values = [round(random.uniform(-3, 3), 2) for i in range(15)]
 
     # values of J along N
     j = []
 
-    for n in range(len(models)):
-        print(n)
+    for i in range(n):
+        print(i)
 
-        # expected return of all states in X
         expected_return_over_X = []
 
-        # for p in values:
-        #     for s in 3*values:
-        #         expected_return = compute_J((p, s), model[n], N)
-        #
-        #         expected_return_over_X.append(expected_return)
-        #
-        # j.append(np.mean(expected_return_over_X))
+        for p in p_values:
+            for s in s_values:
+                expected_return = compute_J((p, s), models[i], N)
 
+                expected_return_over_X.append(expected_return)
 
-        j.append(compute_J(domain.initial_state(), models[n], N))
+        j.append(np.mean(expected_return_over_X))
 
-    plt.plot(len(models), j)
+    plt.plot(range(n), j)
+    plt.xlabel('N')
+    plt.ylabel('$J^{\hat{\mu_{N}^{*}}}$', rotation=0)
+    plt.savefig('plots/J/' + name)
     plt.show()
 
 
 if __name__ == '__main__':
-    model = load('models/regression_300_first_1.joblib')
+    models_name = ['regression_800_first_1',
+                   'regression_800_first_2',
+                   'regression_800_second_1',
+                   'regression_800_second_2',
+                   'tree_800_first_1',
+                   'tree_800_first_2',
+                   'tree_800_second_1',
+                   'tree_800_second_2'
+                   ]
 
-    visualize_expected_return_policy(model, error_threshold=1)
+    for name in models_name:
+        print(name)
+        model = load('models/' + name + '.joblib')
+        # visualize_expected_return_policy(name + '.png', model, error_threshold=1)
+        visualize_Q(name + 'png', model[-1])
 
 
