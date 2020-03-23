@@ -144,8 +144,9 @@ def fitted_Q_iteration_first_stoppin_rule(F, batch_size, epoch):
     N = 1
 
     # Iteration
-    tolerance_fixed = 0.01
+    tolerance_fixed = 0.001
     max = int(math.log(tolerance_fixed * ((1 - gamma) ** 2) / (2 * Br)) / (math.log(gamma))) + 1  # equal to 220
+    test = 10
 
     while N < max:
         print('======================= ITERATION =====================')
@@ -295,6 +296,34 @@ def visualize_Q(name, model, type_of_regressor=0):
     plt.show()
 
 
+def compute_J(state, model, N, type_of_regressor=0):
+    if N < 0:
+        print('N must be positive !')
+    elif N == 0:
+        return 0
+    else:
+        p, s = state[0], state[1]
+        if type_of_regressor == 1:
+            input1 = np.array([[p, s, 4]])
+            input2 = np.array([[p, s, -4]])
+            q = [model.predict(input1)[0][0], model.predict(input2)[0][0]]
+            if np.argmax(q) == 0:
+                mu = 4
+            else:
+                mu = -4
+
+            return domain.r(state, mu) + domain.gamma*compute_J(domain.f(state, mu), model, N-1, type_of_regressor)
+        else:
+            q = [model([[p, s, 4]]), model([[p, s, -4]])]
+            if np.argmax(q) == 0:
+                mu = 4
+            else:
+                mu = -4
+
+            return domain.r(state, mu) + domain.gamma * compute_J(domain.f(state, mu), model, N - 1, type_of_regressor)
+
+
+
 """
 =======================================================================
 =======================================================================
@@ -309,6 +338,7 @@ if __name__ == '__main__':
     q0 = Q_0()
     X_train1, Y_train1 = build_training_set(F_test, q0)
 
+    print()
     print("=======================================================================================")
     print("===============================TEST NEXT ITERATION WITH ANN ===========================")
     print("=======================================================================================")
@@ -327,15 +357,17 @@ if __name__ == '__main__':
     print(regressor.predict(test)[0])
     print(regressor.predict(test)[0][0])
     """
+    print()
     print("=======================================================================================")
     print("======================== Test of the Algorithm for 220 Iteration ======================")
     print("=======================================================================================")
 
-    # comment or uncomment this line of code to test this stopping rule
-    #list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 20)
+    # comment or uncomment these lines of code to test, compile, and train with this stopping rule
+    #list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 100)
     #list_of_regressor[-1].save("model1.h5")
     #print("Saved model to disk")
 
+    print()
     print("=======================================================================================")
     print("============================= TEST distance ===========================================")
     print("=======================================================================================")
@@ -343,21 +375,22 @@ if __name__ == '__main__':
     distance_test = dist(regressor_test, q0, F_test)
     print(distance_test)
 
+    print()
     print("=======================================================================================")
     print("============= Test for the fitted Q iteration for the distance stopping rule ==========")
     print("=======================================================================================")
 
-    # comment or uncomment this line of code to test this stopping rule
+    # comment or uncomment these lines of code to test, compile, and train with this stopping rule
     #list_of_regressor2 = fitted_Q_iteration_second_stopping_rule(F_test, 10, 100)
     #list_of_regressor2[-1].save("model2.h5")
     #print("Saved model to disk 2")
 
+    print()
     print("=======================================================================================")
     print("===================================Test Visualize Q ===================================")
     print("=======================================================================================")
 
     model1 = load_model('model1.h5')
     model2 = load_model('model2.h5')
-    visualize_Q('ANN_First_Stopping_rule', model1, 1)
     visualize_Q('ANN_Second_Stopping_rule', model2, 1)
 
