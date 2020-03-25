@@ -1,9 +1,25 @@
 import os
 from matplotlib import pyplot as plt
-from joblib import load
+import numpy as np
+from joblib import load, dump
 import trajectory
 import domain
 import section5
+
+
+class Policy:
+    def __init__(self, model):
+        self.model = model
+
+    def __call__(self, state):
+        input1 = np.array([np.append(state, 4)])
+        input2 = np.array([np.append(state, -4)])
+        q = [self.model.predict(input1), self.model.predict(input2)]
+
+        if q[0] > q[1]:
+            return 4
+        else:
+            return -4
 
 
 def simulation():
@@ -41,10 +57,15 @@ def simulation():
 
 
 if __name__ == '__main__':
-    models_path = 'models/'
+    # need a model
+    models_list = load('models/regression_second_1.joblib')
+    model = models_list[-1]
 
-    for name in os.listdir('models/'):
-        print(name)
-        model_list = load(models_path + name)
-        section5.visualize_Q(name + '.png', model_list[-1])
+    # initialize a policy
+    policy = Policy(model)
+
+    # use the policy
+    x = domain.initial_state()
+    print(policy(x))
+
 

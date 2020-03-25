@@ -356,8 +356,6 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
     j = []
 
     for i in range(n):
-        print(i)
-
         expected_return_over_X = []
 
         # we compute the expected return for a certain number of states, and take the average
