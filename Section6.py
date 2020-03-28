@@ -7,7 +7,8 @@ from random import randrange
 from random import random
 from math import exp
 import keras.backend as K
-from keras import optimizers
+from keras import *
+from keras.layers import LSTM
 from keras.models import load_model
 from Section2 import *
 from section5 import *
@@ -63,25 +64,27 @@ def build_training_set_parametric_Q_Learning(F, model):
     """
     inputs = []  # input set
     outputs = []  # output set
-    temporal_difference = []
+    #temporal_difference = []
     for tuple in F:
         i = [tuple[0][0], tuple[0][1], tuple[1]]
 
         if model is None:  # First Iteration
-            o = tuple[2] * alpha
+            intermediate = tuple[2] * alpha
+            o = [intermediate, delta(tuple, model)]
         else:  # Iteration N > 1
             x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
-            o = model.predict(x)[0][0] + alpha * delta(tuple, model)
+            intermediate = model.predict(x)[0][0] + alpha * delta(tuple, model)
+            o = [intermediate, delta(tuple, model)]  # y_true
 
         # add the new sample in the training set
         inputs.append(i)
         outputs.append(o)
-        temporal_difference.append(delta(tuple, model))
+        #temporal_difference.append(delta(tuple, model))
 
     inputs = np.array(inputs)
     outputs = np.array(outputs)
-    temporal_difference = np.array(temporal_difference)
-    return inputs, outputs, temporal_difference
+    #temporal_difference = np.array(temporal_difference)
+    return inputs, outputs
 
 
 
@@ -100,17 +103,7 @@ def custom_loss(y_true, y_pred):
     Create a loss function wich is L = y_pred * delta(x,u) such that Q(x, u) = y_pred, but the multiplication
     with delta(x, u) will be possible thanks to the parameter sample_weight in the fit method.
     """
-    return y_pred
-
-
-def custom_loss2(F, model):
-
-    d = delta() # HOW TO CALCULATE delta corresponding to the right input ?!!!!
-    def loss(y_true, y_pred):
-        return y_pred * d
-
-    # Return a function
-    return loss
+    return y_pred[0][0] * y_true[0][1]  # y_pred * delta
 
 
 def new_baseline_model():
@@ -120,11 +113,12 @@ def new_baseline_model():
     # create model
     model = Sequential()
     model.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
+    #model.add(LSTM(units=64))
     model.add(Dropout(0.4))  # avoid overfitting
-    model.add(Dense(1, kernel_initializer='normal'))
+    model.add(Dense(2, kernel_initializer='normal'))
 
     # Compile model
-    sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False)
+    sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
     model.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])
     return model
 
@@ -159,15 +153,35 @@ def Q_learning_parametric_function(F, N):
     """
 
     #Iteration k = 0
-    X, y, temporal_difference = build_training_set_parametric_Q_Learning(F, None)
+    X, y = build_training_set_parametric_Q_Learning(F, None)
+    print("=======================================================================================")
+    print("================================= X training Set 0 ======================================")
+    print("=======================================================================================")
+    print(X, np.shape(X))
+    print("=======================================================================================")
+    print("================================= y Training Set 0 ======================================")
+    print("=======================================================================================")
+    print(y, np.shape(y))
     model = new_baseline_model()
-    model.fit(X, y, sample_weight=temporal_difference, batch_size=1, epochs=10)
+    model.fit(X, y, batch_size=1, epochs=20)
+    print("=======================================================================================")
+    print("================================= PREDICT ======================================")
+    print("=======================================================================================")
+    print(model.predict(np.array([[2, 3, 4]])), type(model.predict(np.array([[2, 3, 4]]))))
 
     #Iteration k>0
     for k in range(1,N):
-        X, y, temporal_difference = build_training_set_parametric_Q_Learning(F, model)
+        X, y = build_training_set_parametric_Q_Learning(F, model)
+        print("=======================================================================================")
+        print("================================= X training Set ======================================")
+        print("=======================================================================================")
+        print(X, np.shape(X))
+        print("=======================================================================================")
+        print("================================= y Training Set ======================================")
+        print("=======================================================================================")
+        print(y, np.shape(y))
         model = new_baseline_model()
-        model.fit(X, y, sample_weight=temporal_difference, batch_size=1, epochs=10)
+        model.fit(X, y, batch_size=1, epochs=20)
 
     return model
 
@@ -211,27 +225,23 @@ if __name__ == '__main__':
     print("=================== Build Training Set for Parametric Q-Learning ======================")
     print("=======================================================================================")
 
-    X, y, temporal = build_training_set_parametric_Q_Learning(F_test, model2)
+    X, y = build_training_set_parametric_Q_Learning(F_test, model2)
     print(X, type(X), np.shape(X))
     print(y, type(y), np.shape(y))
-    print(temporal, np.shape(temporal))
 
     print("=======================================================================================")
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
     F = first_generation_set_one_step_system_transition(400)
-    Q = Q_learning_parametric_function(F, 2)
+    Q = Q_learning_parametric_function(F, 5)
+    X, y = build_training_set_parametric_Q_Learning(F, Q)
 
     print("=======================================================================================")
     print("================================= X training Set ======================================")
     print("=======================================================================================")
-    print(X, np.shape(X))
+    print(X, type(X), np.shape(X))
     print("=======================================================================================")
     print("================================= y Training Set ======================================")
     print("=======================================================================================")
-    print(y, np.shape(y))
-    print("=======================================================================================")
-    print("================================= Temporal Difference =================================")
-    print("=======================================================================================")
-    print(temporal, np.shape(temporal))
+    print(y,type(y), np.shape(y))
