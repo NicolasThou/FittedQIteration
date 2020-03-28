@@ -72,9 +72,13 @@ def build_training_set_parametric_Q_Learning(F, model):
             intermediate = tuple[2] * alpha
             o = [intermediate, delta(tuple, model)]
         else:  # Iteration N > 1
+            #x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
+            #intermediate = model.predict(x)[0][0] + alpha * delta(tuple, model)
+            x_suivant1 = np.array([[tuple[3][0], tuple[3][1], 4]])
+            x_suivant2 = np.array([[tuple[3][0], tuple[3][1], -4]])
             x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
-            intermediate = model.predict(x)[0][0] + alpha * delta(tuple, model)
-            o = [intermediate, delta(tuple, model)]  # y_true
+            result = tuple[2] + gamma * np.max([model.predict(x_suivant1)[0][0], model.predict(x_suivant2)[0][0]])
+            o = [result, delta(tuple, model)]  # y_true
 
         # add the new sample in the training set
         inputs.append(i)
@@ -119,7 +123,7 @@ def new_baseline_model():
 
     # Compile model
     sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
-    model.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])
+    model.compile(loss='mse', optimizer=sgd, metrics=['mse'])
     return model
 
 
@@ -164,10 +168,10 @@ def Q_learning_parametric_function(F, N):
     print(y, np.shape(y))
     model = new_baseline_model()
     model.fit(X, y, batch_size=1, epochs=20)
-    print("=======================================================================================")
-    print("================================= PREDICT ======================================")
-    print("=======================================================================================")
-    print(model.predict(np.array([[2, 3, 4]])), type(model.predict(np.array([[2, 3, 4]]))))
+
+    # test for plotting delta w.r.t one input and the model
+    t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92,  1.24])]
+    temporal_difference = [delta(t, model)]
 
     #Iteration k>0
     for k in range(1,N):
@@ -182,8 +186,9 @@ def Q_learning_parametric_function(F, N):
         print(y, np.shape(y))
         model = new_baseline_model()
         model.fit(X, y, batch_size=1, epochs=20)
+        temporal_difference.append(delta(t, model))
 
-    return model
+    return model, temporal_difference
 
 
 """
@@ -234,7 +239,7 @@ if __name__ == '__main__':
     print("=======================================================================================")
 
     F = first_generation_set_one_step_system_transition(400)
-    Q = Q_learning_parametric_function(F, 5)
+    Q, delta = Q_learning_parametric_function(F, 5)
     X, y = build_training_set_parametric_Q_Learning(F, Q)
 
     print("=======================================================================================")
@@ -245,3 +250,7 @@ if __name__ == '__main__':
     print("================================= y Training Set ======================================")
     print("=======================================================================================")
     print(y,type(y), np.shape(y))
+    print("=======================================================================================")
+    print("================================= delta ===============================================")
+    print("=======================================================================================")
+    print(delta, type(delta), np.shape(delta))

@@ -379,6 +379,8 @@ if __name__ == '__main__':
 
     print("======================= TEST OF FIRST ITERATION WITH Q_0 ==============================")
     F_test = first_generation_set_one_step_system_transition(200)
+    print(F_test[0])
+    print(F_test)
     X_train1, Y_train1 = build_training_set(F_test, None)
     regressor_test = baseline_model()
     regressor_test.fit(X_train1, Y_train1, batch_size=10, epochs=20, verbose=0)
@@ -390,9 +392,10 @@ if __name__ == '__main__':
     regressor_test_2 = baseline_model()
     regressor_test_2.fit(X_train2, Y_train2, batch_size=10, epochs=20, verbose=0)
 
-    # print("=======================================================================================")
-    # print("======================== Test of the Algorithm for 220 Iteration ======================")
-    # print("=======================================================================================")
+    print("=======================================================================================")
+    print("================Test for the fitted Q iteration for the first stopping rule ===========")
+    print("=======================================================================================")
+
     # comment or uncomment this line of code to test this stopping rule
     # list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 20)
     # list_of_regressor[-1].save("model1.h5")
@@ -401,12 +404,14 @@ if __name__ == '__main__':
     print("=======================================================================================")
     print("============================= TEST distance ===========================================")
     print("=======================================================================================")
+
     distance_test = dist(regressor_test_2, regressor_test, F_test)
     print('distance = {}'.format(distance_test))
 
-    # print("=======================================================================================")
-    # print("============= Test for the fitted Q iteration for the distance stopping rule ==========")
-    # print("=======================================================================================")
+    print("=======================================================================================")
+    print("============= Test for the fitted Q iteration for the second stopping rule ============")
+    print("=======================================================================================")
+
     # comment or uncomment this line of code to test this stopping rule
     # list_of_regressor2 = fitted_Q_iteration_second_stopping_rule(F_test, 10, 100)
     # list_of_regressor2[-1].save("model2.h5")
