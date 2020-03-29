@@ -29,14 +29,14 @@ def delta(step, model_delta):
     Argument:
     =======
     step = one step system transition (x, u, r, x_next)
-    input =
+    model_delta = Function approximator Q function
 
     Return:
     ======
     return float, wich is the new temporal difference
     """
     if model_delta is None:
-        return alpha * step[2]
+        return step[2]
     else:
         x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
         x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
@@ -70,7 +70,7 @@ def build_training_set_parametric_Q_Learning(F, model_build):
         i = [step[0][0], step[0][1], step[1]]
 
         if model_build is None:  # First Iteration
-            intermediate = step[2] * alpha
+            intermediate = step[2] * alpha  # target : y_true
             o = [intermediate, delta(step, model_build)]
         else:  # Iteration N > 1
             x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
@@ -109,7 +109,7 @@ def custom_loss(y_true, y_pred):
     Create a loss function wich is L = y_pred * delta(x,u) such that Q(x, u) = y_pred, but the multiplication
     with delta(x, u) will be possible thanks to the parameter sample_weight in the fit method.
     """
-    return y_pred[0][0] * y_true[0][1]  # y_pred * delta
+    return y_pred[0][0] * y_true[0][1]  # target_predicted * delta
 
 
 def new_baseline_model():
@@ -125,7 +125,7 @@ def new_baseline_model():
 
     # Compile model_baseline
     sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
-    model_baseline.compile(loss=custom_loss, optimizer=sgd,
+    model_baseline.compile(loss='mse', optimizer=sgd,
                            metrics=['mse'])  # Choose loss parameter : 'mse' or custom_loss
     return model_baseline
 
@@ -169,7 +169,7 @@ def Q_learning_parametric_function(F, N):
     print("================================= y Training Set 0 ======================================")
     print("=======================================================================================")
     print(y, np.shape(y))
-    model_Q_learning = new_baseline_model()
+    model_Q_learning = new_baseline_model()  # Q_1
     model_Q_learning.fit(X, y, batch_size=1, epochs=20)
 
     # test for plotting delta w.r.t one input and the model_Q_learning
