@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+from joblib import load, dump
 import math
 import random
 import domain
@@ -36,7 +38,8 @@ def delta(step, model_delta):
     return float, wich is the new temporal difference
     """
     if model_delta is None:
-        return step[2]
+        # see the Q-learning update when Q=0 everywhere
+        return alpha * step[2]
     else:
         x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
         x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
@@ -76,8 +79,6 @@ def build_training_set_parametric_Q_Learning(F, model_build):
             x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
             x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
             x = np.array([[step[0][0], step[0][1], step[1]]])
-            # result = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], \
-            # model_build.predict(x_suivant2)[0][0]])
             result = ((1 - alpha) * model_build.predict(x)[0][0]) + \
                      (alpha * (step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0],
                                                          model_build.predict(x_suivant2)[0][0]])))  # Q-Learning update
@@ -110,7 +111,7 @@ def custom_loss(y_true, y_pred):
     with delta(x, u) will be possible thanks to the parameter sample_weight in the fit method.
     """
     #return np.array([y_pred[0][0] * y_true[0][1], 0])  # target_predicted * delta, 0
-    return y_pred[0][0] * y_true[0][1]
+    return -y_pred[0][0] * y_true[0][1]
 
 
 
@@ -126,7 +127,7 @@ def new_baseline_model():
     model_baseline.add(Dense(2, kernel_initializer='normal'))
 
     # Compile model_baseline
-    sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
+    sgd = optimizers.SGD(learning_rate=0.01, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
     model_baseline.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])  # Choose loss parameter : 'mse' or custom_loss
     return model_baseline
 
@@ -160,6 +161,9 @@ def Q_learning_parametric_function(F, N):
     the neural network.
     """
 
+    # store the N models
+    models = []
+
     # Iteration k = 0
     X, y = build_training_set_parametric_Q_Learning(F, None)
     print("=======================================================================================")
@@ -172,6 +176,7 @@ def Q_learning_parametric_function(F, N):
     print(y, np.shape(y))
     model_Q_learning = new_baseline_model()  # Q_1
     model_Q_learning.fit(X, y, batch_size=1, epochs=20)
+    models.append(model_Q_learning)
 
     # test for plotting delta w.r.t one input and the model_Q_learning
     t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92, 1.24])]  # one step system transition fixed
@@ -193,10 +198,11 @@ def Q_learning_parametric_function(F, N):
         print(y, np.shape(y))
         model_Q_learning = new_baseline_model()
         model_Q_learning.fit(X, y, batch_size=1, epochs=20)
+        models.append(model_Q_learning)
         temporal_difference.append(
             delta(t, model_Q_learning))  # calculte for each iteration the delta with the new model_Q_learning
 
-    return model_Q_learning, temporal_difference
+    return models, temporal_difference
 
 
 """
@@ -256,9 +262,23 @@ if __name__ == '__main__':
     print("=======================================================================================")
 
     F = first_generation_set_one_step_system_transition(400)
-    Q, delta_test = Q_learning_parametric_function(F, 5)
+    Qs, delta_test = Q_learning_parametric_function(F, 30)
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
     print(delta_test, type(delta_test), np.shape(delta_test))
+
+    for index, model in enumerate(Qs):
+        model.save('parametric_models/Q_{}.h5'.format(index))
+
+    dump(delta_test, 'delta.joblib')
+    # delta_test = load('delta.joblib')
+    N = range(30)
+    plt.plot(N, np.abs(delta_test))
+    plt.show()
+
+    # model = load_model('parametric_models/Q_0.h5', custom_objects={'custom_loss': custom_loss})
+    # print(model.predict(np.array([[0, 0, 4]])))
+
+
