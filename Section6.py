@@ -109,7 +109,9 @@ def custom_loss(y_true, y_pred):
     Create a loss function wich is L = y_pred * delta(x,u) such that Q(x, u) = y_pred, but the multiplication
     with delta(x, u) will be possible thanks to the parameter sample_weight in the fit method.
     """
-    return np.array([y_pred[0][0] * y_true[0][1], 0])  # target_predicted * delta, 0
+    #return np.array([y_pred[0][0] * y_true[0][1], 0])  # target_predicted * delta, 0
+    return y_pred[0][0] * y_true[0][1]
+
 
 
 def new_baseline_model():
@@ -125,8 +127,7 @@ def new_baseline_model():
 
     # Compile model_baseline
     sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
-    model_baseline.compile(loss='mse', optimizer=sgd,
-                           metrics=['mse'])  # Choose loss parameter : 'mse' or custom_loss
+    model_baseline.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])  # Choose loss parameter : 'mse' or custom_loss
     return model_baseline
 
 
