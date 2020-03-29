@@ -22,41 +22,41 @@ alpha = 0.05
 
 # function intermediate to compute the temporal difference delta(x, u) = r + gamma * max(Q_N_1(x_suivant, u)) - Q_N_1(x,u)
 
-def delta(tuple, model):
+def delta(step, model_delta):
     """
     Compute the temporal difference state action
 
     Argument:
     =======
-    tuple = one step system transition (x, u, r, x_next)
+    step = one step system transition (x, u, r, x_next)
     input =
 
     Return:
     ======
     return float, wich is the new temporal difference
     """
-    if model is None:
-        return alpha * tuple[2]
+    if model_delta is None:
+        return alpha * step[2]
     else:
-        x_suivant1 = np.array([[tuple[3][0], tuple[3][1], 4]])
-        x_suivant2 = np.array([[tuple[3][0], tuple[3][1], -4]])
-        x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
-        result = tuple[2] + gamma * np.max([model.predict(x_suivant1)[0][0], model.predict(x_suivant2)[0][0]]) - model.predict(x)[0][0]
+        x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
+        x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
+        x = np.array([[step[0][0], step[0][1], step[1]]])
+        result = step[2] + gamma * np.max([model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][0]
     return result
 
 
 # Build training set input : (x,u)
 # 					 output : Q_N_1 + alpha * delta(x,u)
 
-def build_training_set_parametric_Q_Learning(F, model):
+def build_training_set_parametric_Q_Learning(F, model_build):
     """
     Build the training set for training the parametric
     approximation architecture for the Q-Learning
 
     Argument:
     =======
-    F : is the four-tuples set
-    model : is the Q_(N-1) functions
+    F : is the four-steps set
+    model_build : is the Q_(N-1) functions
 
     Return:
     ======
@@ -65,25 +65,26 @@ def build_training_set_parametric_Q_Learning(F, model):
     inputs = []  # input set
     outputs = []  # output set
     #temporal_difference = []
-    for tuple in F:
-        i = [tuple[0][0], tuple[0][1], tuple[1]]
+    for step in F:
+        i = [step[0][0], step[0][1], step[1]]
 
-        if model is None:  # First Iteration
-            intermediate = tuple[2] * alpha
-            o = [intermediate, delta(tuple, model)]
+        if model_build is None:  # First Iteration
+            intermediate = step[2] * alpha
+            o = [intermediate, delta(step, model_build)]
         else:  # Iteration N > 1
-            #x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
-            #intermediate = model.predict(x)[0][0] + alpha * delta(tuple, model)
-            x_suivant1 = np.array([[tuple[3][0], tuple[3][1], 4]])
-            x_suivant2 = np.array([[tuple[3][0], tuple[3][1], -4]])
-            x = np.array([[tuple[0][0], tuple[0][1], tuple[1]]])
-            result = tuple[2] + gamma * np.max([model.predict(x_suivant1)[0][0], model.predict(x_suivant2)[0][0]])
-            o = [result, delta(tuple, model)]  # y_true
+            #x = np.array([[step[0][0], step[0][1], step[1]]])
+            #intermediate = model_build.predict(x)[0][0] + alpha * delta(step, model_build)
+            x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
+            x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
+            x = np.array([[step[0][0], step[0][1], step[1]]])
+            result = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], model_build.predict(x_suivant2)[0][0]])  #TODO
+            d = delta(step, model_build)
+            o = [result, d]  # the output contains the delta corresponding to each input
 
         # add the new sample in the training set
         inputs.append(i)
         outputs.append(o)
-        #temporal_difference.append(delta(tuple, model))
+        #temporal_difference.append(delta(step, model_build))
 
     inputs = np.array(inputs)
     outputs = np.array(outputs)
@@ -115,16 +116,16 @@ def new_baseline_model():
     Define base model for artificial neural network
     """
     # create model
-    model = Sequential()
-    model.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
-    #model.add(LSTM(units=64))
-    model.add(Dropout(0.4))  # avoid overfitting
-    model.add(Dense(2, kernel_initializer='normal'))
+    model_baseline = Sequential()
+    model_baseline.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
+    #model_baseline.add(LSTM(units=64))
+    model_baseline.add(Dropout(0.4))  # avoid overfitting
+    model_baseline.add(Dense(2, kernel_initializer='normal'))
 
-    # Compile model
+    # Compile model_baseline
     sgd = optimizers.SGD(learning_rate=alpha, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
-    model.compile(loss='mse', optimizer=sgd, metrics=['mse'])
-    return model
+    model_baseline.compile(loss='mse', optimizer=sgd, metrics=['mse'])  # Loss MSE or Custom Loss
+    return model_baseline
 
 
 """
@@ -166,16 +167,16 @@ def Q_learning_parametric_function(F, N):
     print("================================= y Training Set 0 ======================================")
     print("=======================================================================================")
     print(y, np.shape(y))
-    model = new_baseline_model()
-    model.fit(X, y, batch_size=1, epochs=20)
+    model_Q_learning = new_baseline_model()
+    model_Q_learning.fit(X, y, batch_size=1, epochs=20)
 
-    # test for plotting delta w.r.t one input and the model
-    t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92,  1.24])]
-    temporal_difference = [delta(t, model)]
+    # test for plotting delta w.r.t one input and the model_Q_learning
+    t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92,  1.24])]  # one step system transition fixed
+    temporal_difference = [delta(t, model_Q_learning)]  # calculate the delta with the first model_Q_learning
 
     #Iteration k>0
     for k in range(1,N):
-        X, y = build_training_set_parametric_Q_Learning(F, model)
+        X, y = build_training_set_parametric_Q_Learning(F, model_Q_learning)
         print("=======================================================================================")
         print("================================= X training Set ======================================")
         print("=======================================================================================")
@@ -184,11 +185,11 @@ def Q_learning_parametric_function(F, N):
         print("================================= y Training Set ======================================")
         print("=======================================================================================")
         print(y, np.shape(y))
-        model = new_baseline_model()
-        model.fit(X, y, batch_size=1, epochs=20)
-        temporal_difference.append(delta(t, model))
+        model_Q_learning = new_baseline_model()
+        model_Q_learning.fit(X, y, batch_size=1, epochs=20)
+        temporal_difference.append(delta(t, model_Q_learning)) # calculte for each iteration the delta with the new model_Q_learning
 
-    return model, temporal_difference
+    return model_Q_learning, temporal_difference
 
 
 """
@@ -239,7 +240,10 @@ if __name__ == '__main__':
     print("=======================================================================================")
 
     F = first_generation_set_one_step_system_transition(400)
-    Q, delta = Q_learning_parametric_function(F, 5)
+    Q, delta_test = Q_learning_parametric_function(F, 5)
+    print(Q.predict(np.array([[0.5, 2, 4]])))
+    t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92, 1.24])]
+    print(delta(t, Q))
     X, y = build_training_set_parametric_Q_Learning(F, Q)
 
     print("=======================================================================================")
@@ -253,4 +257,4 @@ if __name__ == '__main__':
     print("=======================================================================================")
     print("================================= delta ===============================================")
     print("=======================================================================================")
-    print(delta, type(delta), np.shape(delta))
+    print(delta_test, type(delta_test), np.shape(delta_test))
