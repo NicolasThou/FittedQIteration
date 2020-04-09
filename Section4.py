@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from PIL import Image
 from save_simulation import *
 import Section2 as s2
 

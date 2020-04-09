@@ -5,6 +5,12 @@ import section5 as s5
 
 
 if __name__ == '__main__':
+    """
+    Here we train all the models for :
+        - all type of SL architecture
+        - all trajaectory generation system
+        - all stopping rule condition
+    """
     T = 1000
     bsize = 10
     ep = 100
