@@ -40,14 +40,16 @@ def delta(step, model_delta):
     """
 
     # the model must be defined !
-    assert model_delta is not None
-
-    x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
-    x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
-    x = np.array([[step[0][0], step[0][1], step[1]]])
-    result = step[2] + gamma * np.max(
-        [model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][
-                     0]
+    #assert model_delta is not None
+    if model_delta is None:
+        result = step[2]
+    else:
+        x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
+        x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
+        x = np.array([[step[0][0], step[0][1], step[1]]])
+        result = step[2] + gamma * np.max(
+            [model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][
+                         0]
     return result
 
 
@@ -72,13 +74,7 @@ def build_training_set_parametric_Q_Learning(F, model_build):
     outputs = []  # output set
     for step in F:
         i = [step[0][0], step[0][1], step[1]]
-
-        if model_build is None:
-            # see the Q-learning update when Q=0 everywhere
-            o = alpha * step[2]
-        else:
-            x = np.array([[step[0][0], step[0][1], step[1]]])
-            o = model_build.predict(x)[0][0] + alpha * delta(step, model_build)
+        o = delta(step, model_build)
 
         # add the new sample in the training set
         inputs.append(i)
@@ -113,7 +109,9 @@ def new_baseline_model():
     """
     # create model
     model_baseline = Sequential()
-    model_baseline.add(Dense(2, input_dim=3, kernel_initializer='normal', activation='relu'))
+    model_baseline.add(Dense(10, input_dim=3, kernel_initializer='normal', activation='relu'))
+    model_baseline.add(Dropout(0.4))  # avoid overfitting
+    model_baseline.add(Dense(5, kernel_initializer='normal', activation='relu'))
     # model_baseline.add(LSTM(units=64))
     model_baseline.add(Dropout(0.4))  # avoid overfitting
     model_baseline.add(Dense(1, kernel_initializer='normal'))
@@ -244,23 +242,27 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    N = 20  # number of iterations
+    N = 100  # number of iterations
     F = second_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, N)
+
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
     print(delta_test)
 
+    """
     model.save('parametric_models/Q.h5')
-
     dump(delta_test, 'delta.joblib')
+    """
+
     N = range(N)
     plt.plot(N, np.abs(delta_test))
     plt.show()
 
-    # # load a model with a custom object (e.g. loss function)
+
+    # load a model with a custom object (e.g. loss function)
     # model = load_model('parametric_models/Q.h5', custom_objects={'custom_loss': custom_loss})
 
 
