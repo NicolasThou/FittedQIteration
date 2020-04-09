@@ -38,14 +38,15 @@ def delta(step, model_delta):
     ======
     return float, wich is the new temporal difference
     """
-    if model_delta is None:
-        return step[2]
-    else:
-        x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
-        x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
-        x = np.array([[step[0][0], step[0][1], step[1]]])
-        result = step[2] + gamma * np.max(
-            [model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][
+
+    # the model must be defined !
+    assert model_delta is not None
+
+    x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
+    x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
+    x = np.array([[step[0][0], step[0][1], step[1]]])
+    result = step[2] + gamma * np.max(
+        [model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][
                      0]
     return result
 
@@ -121,7 +122,7 @@ def new_baseline_model():
     sgd = optimizers.SGD(learning_rate=0.01, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
 
     # Choose loss parameter : 'mse' or custom_loss
-    model_baseline.compile(loss='mean_squared_error', optimizer=sgd, metrics=['mse'])
+    model_baseline.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])
 
     return model_baseline
 
@@ -167,8 +168,8 @@ def Q_learning_parametric_function(F, N):
         print("================================= iteration k = {} ====================================".format(k))
         print()
 
-        # build batch trajectory
-        indexes = np.random.randint(len(F), size=int(len(F)/N))
+        # build batch trajectory with 100 random samples of F
+        indexes = np.random.randint(len(F), size=100)
         f = []
         for i in indexes:
             f.append(F[i])
@@ -178,9 +179,9 @@ def Q_learning_parametric_function(F, N):
         else:
             X, y = build_training_set_parametric_Q_Learning(f, model_Q_learning)
 
-        model_Q_learning.fit(X, y, batch_size=1, epochs=50, verbose=0)
+        model_Q_learning.fit(X, y, batch_size=32, epochs=50, verbose=0)
 
-        # computes for each iteration the delta with the new model_Q_learning
+        # computes for each iteration the delta with the updated model
         d = delta(t, model_Q_learning)
         print('delta = {}'.format(d))
         temporal_difference.append(d)
@@ -243,14 +244,14 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    N = 10  # number of iterations
-    F = second_generation_set_one_step_system_transition(1000)
+    N = 20  # number of iterations
+    F = second_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, N)
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
-    print(delta_test, type(delta_test), np.shape(delta_test))
+    print(delta_test)
 
     model.save('parametric_models/Q.h5')
 
@@ -259,7 +260,7 @@ if __name__ == '__main__':
     plt.plot(N, np.abs(delta_test))
     plt.show()
 
-    # # load a list of models with a custom object (loss function)
+    # # load a model with a custom object (e.g. loss function)
     # model = load_model('parametric_models/Q.h5', custom_objects={'custom_loss': custom_loss})
 
 
