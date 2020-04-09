@@ -134,14 +134,14 @@ Q-Learning Algorithm with parametric approximator architecture
 
 Pseudo-code Cannot work with Q-table because of the infinite number of state so:
 
-	- Set Q_0 wich return 0 everywhere
-	- Build a training set with Q_0 wich is : input : (x,u)
- 					 						  output : Q_N_1 + alpha * delta(x,u)
-	- Training our customize Artificial neural network on this set (loss customize)
-	- Build a new training set with the previous Artificial Neural network already train
-	- Training a new customize Artificial neural network on this NEW set
-	- etc... iteration k times
-	- then return the last Artificial Neural Network wich is the Q(x, u)
+    - Set Q_0 wich return 0 everywhere
+    - Build a training set with Q_0 wich is : input : (x,u)
+                                                output : Q_N_1 + alpha * delta(x,u)
+    - Training our customize Artificial neural network on this set (loss customize)
+    - Build a new training set with the previous Artificial Neural network already train
+    - Training a new customize Artificial neural network on this NEW set
+    - etc... iteration k times
+    - then return the last Artificial Neural Network wich is the Q(x, u)
 
 """
 
