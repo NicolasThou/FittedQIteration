@@ -9,9 +9,26 @@ from joblib import load
 import random
 import domain
 import trajectory
+import save_simulation as ss
+
 
 
 Br = 1  # bound value for the reward
+
+
+class Policy:
+    def __init__(self, model):
+        self.model = model
+
+    def __call__(self, state):
+        input1 = np.array([np.append(state, 4)])
+        input2 = np.array([np.append(state, -4)])
+        q = [self.model.predict(input1), self.model.predict(input2)]
+
+        if q[0] > q[1]:
+            return 4
+        else:
+            return -4
 
 
 def baseline_model():
@@ -258,7 +275,7 @@ def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, 
     return sequence_Q_N
 
 
-def visualize_Q(name, model):
+def visualize_Q(model):
     """
     Plot the Q values (for both actions)
     """
@@ -311,7 +328,6 @@ def visualize_Q(name, model):
         cax.xaxis.set_ticks_position("top")
 
     fig.suptitle('Q-functions : $\hat{Q}_{4}$ in the left and $\hat{Q}_{-4}$ in the right.', fontsize=14)
-    plt.savefig('plots/Q/' + name)
     plt.show()
 
 
@@ -338,7 +354,7 @@ def compute_J(state, model, N):
         return domain.r(state, mu) + domain.gamma*compute_J(domain.f(state, mu), model, N-1)
 
 
-def visualize_expected_return_policy(name, models, error_threshold=0.1):
+def visualize_expected_return_policy(models, error_threshold=0.1):
     """
     Plot the expected return of a policy (Q-function)
     """
@@ -371,64 +387,33 @@ def visualize_expected_return_policy(name, models, error_threshold=0.1):
     plt.plot(range(n), j)
     plt.xlabel('N')
     plt.ylabel('$J^{\hat{\mu_{N}^{*}}}$', rotation=0)
-    plt.savefig('plots/J/' + name)
     plt.show()
 
 
 if __name__ == '__main__':
-
-    print("======================= TEST OF FIRST ITERATION WITH Q_0 ==============================")
-    F_test = first_generation_set_one_step_system_transition(200)
-    print(F_test[0])
-    print(F_test)
-    X_train1, Y_train1 = build_training_set(F_test, None)
-    regressor_test = baseline_model()
-    regressor_test.fit(X_train1, Y_train1, batch_size=10, epochs=20, verbose=0)
+    print("=======================================================================================")
+    print("============================ Visualize Q for Neural Network ===========================")
+    print("=======================================================================================")
+    nn_model = load('models/neural_net_first_1.joblib')[-1]  # visualize Qn
+    visualize_Q(nn_model)
 
     print("=======================================================================================")
-    print("============================== TEST NEXT ITERATION WITH ANN ===========================")
+    print("=================== Visualize Expected Return for Linear Regression ===================")
     print("=======================================================================================")
-    X_train2, Y_train2 = build_training_set(F_test, regressor_test)
-    regressor_test_2 = baseline_model()
-    regressor_test_2.fit(X_train2, Y_train2, batch_size=10, epochs=20, verbose=0)
+    linreg_model = load('models/regression_second_1.joblib')
+    print('Linear Regression list contains {} models'.format(len(linreg_model)))
+    # visualize_expected_return_policy(linreg_model)
 
     print("=======================================================================================")
-    print("================Test for the fitted Q iteration for the first stopping rule ===========")
+    print("======================= Visualize Hill Trajectory for ExtraTree =======================")
     print("=======================================================================================")
-
-    # comment or uncomment this line of code to test this stopping rule
-    # list_of_regressor = fitted_Q_iteration_first_stoppin_rule(F_test, 10, 20)
-    # list_of_regressor[-1].save("model1.h5")
-    # print("Saved model to disk")
-
-    print("=======================================================================================")
-    print("============================= TEST distance ===========================================")
-    print("=======================================================================================")
-
-    distance_test = dist(regressor_test_2, regressor_test, F_test)
-    print('distance = {}'.format(distance_test))
-
-    print("=======================================================================================")
-    print("============= Test for the fitted Q iteration for the second stopping rule ============")
-    print("=======================================================================================")
-
-    # comment or uncomment this line of code to test this stopping rule
-    # list_of_regressor2 = fitted_Q_iteration_second_stopping_rule(F_test, 10, 100)
-    # list_of_regressor2[-1].save("model2.h5")
-    # print("Saved model to disk 2")
-
-    print("=======================================================================================")
-    print("================================== Test Visualize Q ===================================")
-    print("=======================================================================================")
-    model = load('models/neural_net_first_1.joblib')[-1]  # visualize Qn
-    visualize_Q('ANN_Second_Stopping_rule', model)
-
-    print("=======================================================================================")
-    print("========================== Test Visualize Expected Return =============================")
-    print("=======================================================================================")
-    model = load('models/neural_net_first_2.joblib')
-    visualize_expected_return_policy('ANN_Second_Stopping_rule', model)
-
+    extree_model = load('models/tree_second_2.joblib')[-1]
+    policy = Policy(extree_model)
+    # start from an initial state
+    x = domain.initial_state()
+    # display the trajectory created by the model on a GIF file
+    ss.visualize_policy(x, policy, 'ExtraTreeVisualization')
+    print('ExtraTreeVisualization.gif file saved.')
 
 
 
