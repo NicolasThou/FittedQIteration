@@ -14,6 +14,10 @@ from keras.layers import LSTM
 from keras.models import load_model
 from Section2 import *
 from section5 import *
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 gamma = 0.95
 # alpha is the learning ration associated with the Q-learning, not the learning rate of SGD !!
@@ -74,7 +78,19 @@ def build_training_set_parametric_Q_Learning(F, model_build):
     outputs = []  # output set
     for step in F:
         i = [step[0][0], step[0][1], step[1]]
-        o = delta(step, model_build)
+
+        if is_final_state(step[3]):
+            o = step[2]
+        else:
+            #o = delta(step, model_build)
+            if model_build is None:
+                o = step[2]
+            else:
+                x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
+                x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
+                o = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], model_build.predict(x_suivant2)[0][0]]) - model_build.predict(np.array([i]))[0][0]
+
+
 
         # add the new sample in the training set
         inputs.append(i)
@@ -94,16 +110,28 @@ Q(x, u) and the learning rate is NON CONSTANT because it depends on the temporal
 """
 
 
-# Define custom loss
-def custom_loss(y_true, y_pred):
-    """
-    Create a loss function wich is L = y_pred * delta(x,u) such that Q(x, u) = y_pred, but the multiplication
-    with delta(x, u) will be possible thanks to the parameter sample_weight in the fit method.
-    """
-    return -y_pred * y_true
-
-
 def new_baseline_model():
+    """
+    Define base model for artificial neural network
+    """
+    # create model
+    model_baseline = Sequential()
+    model_baseline.add(Dense(10, input_dim=3, kernel_initializer='normal', activation='relu'))
+    model_baseline.add(Dropout(0.4))  # avoid overfitting
+    model_baseline.add(Dense(5, kernel_initializer='normal', activation='relu'))
+    # model_baseline.add(LSTM(units=64))
+    model_baseline.add(Dropout(0.4))  # avoid overfitting
+    model_baseline.add(Dense(1, kernel_initializer='normal'))
+
+    # Compile model_baseline
+    sgd = optimizers.SGD(learning_rate=0.01)
+
+    # Choose loss parameter : 'mse'
+    model_baseline.compile(loss='MSE', optimizer=sgd, metrics=['mse'])
+
+    return model_baseline
+
+def new_baseline_model_RBF():
     """
     Define base model for artificial neural network
     """
@@ -120,7 +148,7 @@ def new_baseline_model():
     sgd = optimizers.SGD(learning_rate=0.01, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
 
     # Choose loss parameter : 'mse' or custom_loss
-    model_baseline.compile(loss=custom_loss, optimizer=sgd, metrics=['mse'])
+    model_baseline.compile(loss='MSE', optimizer=sgd, metrics=['mse'])
 
     return model_baseline
 
@@ -144,7 +172,7 @@ Pseudo-code Cannot work with Q-table because of the infinite number of state so:
 """
 
 
-def Q_learning_parametric_function(F, N):
+def Q_learning_parametric_function(F, N, a):
     """
     new_baseline_model() use a customize loss which return only the y_pred.
     Plus, we have the parameter sample_weight on the fit() method which multiply each y_pred by the correct
@@ -152,15 +180,23 @@ def Q_learning_parametric_function(F, N):
 
     Then we use the SGD on the Loss : y_pred * delta in order to optimize all the parameters of
     the neural network.
+
+    Argument:
+    ========
+    F the
     """
 
     # store the delta along the training
     temporal_difference = []
-
     # test for plotting delta w.r.t one input and the model_Q_learning
     t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92, 1.24])]  # one step system transition fixed
 
-    model_Q_learning = new_baseline_model()
+    # Initialize the neural network
+    if a == 0:
+        model_Q_learning = new_baseline_model()
+    else:
+        model_Q_learning = new_baseline_model_RBF()
+
     for k in range(N):
         print()
         print("================================= iteration k = {} ====================================".format(k))
@@ -186,10 +222,22 @@ def Q_learning_parametric_function(F, N):
 
     return model_Q_learning, temporal_difference
 
-
 """
 =========================================================
 """
+
+def make_y(l):
+    test = []
+    for i in range(len(l)):
+        test.append([l[i]])
+    return test
+
+def make_X(N):
+    test = []
+    for i in range(N):
+        test.append([i])
+    return test
+
 
 # ----------------------- Derive the policy -------------------------
 
@@ -242,27 +290,31 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    N = 100  # number of iterations
-    F = second_generation_set_one_step_system_transition(5000)
-    model, delta_test = Q_learning_parametric_function(F, N)
+    Number_of_iteration = 200  # number of iterations
+    F = first_generation_set_one_step_system_transition(5000)
+    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 0)
 
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
-    print(delta_test)
 
-    """
-    model.save('parametric_models/Q.h5')
-    dump(delta_test, 'delta.joblib')
-    """
+    y = make_y(delta_test)
+    X = make_X(Number_of_iteration)
+    # Fit
+    poly_reg = PolynomialFeatures(degree=4)
+    X_poly = poly_reg.fit_transform(X)
+    poly_reg.fit(X_poly, y)
+    lin_reg_2 = LinearRegression()
+    lin_reg_2.fit(X_poly, y)
+    # Visualize
+    plt.scatter(X, y, color='red')
+    plt.plot(X, lin_reg_2.predict(poly_reg.fit_transform(X)), color='blue', linewidth=3)
 
-    N = range(N)
-    plt.plot(N, np.abs(delta_test))
+    plt.title('Result of the temporal difference along the iterations')
+    plt.xlabel('Number of Iteration')
+    plt.ylabel('Temporal Difference')
     plt.show()
 
-
-    # load a model with a custom object (e.g. loss function)
-    # model = load_model('parametric_models/Q.h5', custom_objects={'custom_loss': custom_loss})
 
 
