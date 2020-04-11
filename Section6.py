@@ -253,6 +253,35 @@ def policy(x, model_policy):
     x_2 = np.array([[x[0], x[1], -4]])
     return np.argmax([model_policy.predict(x_1)[0][0], model_policy.predict(x_2)[0][0]])
 
+
+# ------------------------ PLOT CURVE AND TENDANCY ---------------
+
+def show(result, N_iteration):
+    """
+    Argument:
+    ========
+    result : variable type "list" and represent the value we obtain like delta, or J-value
+    N_iteraion : Integer, Number of iterations we use to compute the results
+
+    """
+
+    y = make_y(result)
+    X_train = make_X(N_iteration)
+    # Fit
+    poly_reg = PolynomialFeatures(degree=4)
+    X_poly = poly_reg.fit_transform(X_train)
+    poly_reg.fit(X_poly, y)
+    lin_reg_2 = LinearRegression()
+    lin_reg_2.fit(X_poly, y)
+    # Visualize
+    plt.scatter(X_train, y, color='red')
+    plt.plot(X_train, lin_reg_2.predict(poly_reg.fit_transform(X_train)), color='blue', linewidth=3)
+
+    plt.title('Result of the temporal difference along the iterations')
+    plt.xlabel('Number of Iteration')
+    plt.ylabel('Temporal Difference')
+    plt.show()
+
 # ----------------------- Expected Return of mu* ---------------------------------
 
 # Calculate J with the policy mu*
@@ -290,7 +319,7 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    Number_of_iteration = 200  # number of iterations
+    Number_of_iteration = 100  # number of iterations
     F = first_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 0)
     model.save('parametric_models/Q.h5')
@@ -300,22 +329,6 @@ if __name__ == '__main__':
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
 
-    y = make_y(delta_test)
-    X = make_X(Number_of_iteration)
-    # Fit
-    poly_reg = PolynomialFeatures(degree=4)
-    X_poly = poly_reg.fit_transform(X)
-    poly_reg.fit(X_poly, y)
-    lin_reg_2 = LinearRegression()
-    lin_reg_2.fit(X_poly, y)
-    # Visualize
-    plt.scatter(X, y, color='red')
-    plt.plot(X, lin_reg_2.predict(poly_reg.fit_transform(X)), color='blue', linewidth=3)
-
-    plt.title('Result of the temporal difference along the iterations')
-    plt.xlabel('Number of Iteration')
-    plt.ylabel('Temporal Difference')
-    plt.show()
-
+    show(delta_test, Number_of_iteration)
 
 
