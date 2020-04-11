@@ -1,11 +1,8 @@
 import numpy as np
 import torch.nn
 import math
-
-
-k_clusters = 10
-sigma = 0.5
-beta = 1/(2*(sigma**2))
+import random
+import matplotlib.pyplot as plt
 
 
 class RBFLayer(torch.nn.Module):
@@ -17,6 +14,9 @@ class RBFLayer(torch.nn.Module):
         # apply weight
         q = self.linear(x)
 
+        # add constant bias
+        q += 1
+
         # normalisation
         q = q/torch.sum(x)
 
@@ -24,91 +24,150 @@ class RBFLayer(torch.nn.Module):
 
 
 class RBFNet():
-    def __init__(self, k_centers):
-        self.centers = k_centers
-        self.nb_in = len(k_centers)
+    def __init__(self, kMeans):
+        self.nb_in = kMeans
+        self.centers = None
         self.layer = RBFLayer(self.nb_in, 1)
+        self.beta = None
 
-    def fit(self, X, Y, batch_size=None, epochs=None):
+    def fit(self, X, Y, epochs=50):
+        """
+        Train the RBFNet model
+        :return : the loss list
+        """
+        self.centers = extract_k_centers(X, self.nb_in)
+
+
         criterion = torch.nn.MSELoss(reduction='sum')
-        optimizer = torch.optim.SGD(self.layer.parameters(), lr=0.001)
-        X = torch.tensor(X, requires_grad=True, dtype=torch.float32)
-        pass
+        optimizer = torch.optim.SGD(self.layer.parameters(), lr=0.01, momentum=0.9, weight_decay=0.9)
+
+        losses = []
+        for e in range(epochs):
+            l = 0
+            for x, y in zip(X, Y):
+                x = torch.tensor(x, dtype=torch.float32)
+                y = torch.tensor([y], dtype=torch.float32)
+
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # model make rpediction
+                y_pred = self.predict(x.tolist())
+
+                # computes the loss function
+                loss = criterion(y_pred, y)
+                l += loss.item()
+
+                # computes the backpropagation
+                loss.backward()
+                optimizer.step()
+                print('y_true = {}  |  y_pred = {}'.format(y, y_pred))
+                print(self.layer.linear.weight)
+
+            l /= len(X)
+            losses.append(l)
+            print('epoch {}  |  loss : {}'.format(e, l))
+
+        return losses
 
     def predict(self, X):
+        """
+        Make prediction for a set of samples
+        """
         # go through the centers
-        X = preprocess(X, self.centers)
+        X = preprocess(X, self.centers, self.beta)
 
         # apply the weights with normalisation
-        return self.layer(X)
+        out = self.layer(X)
+
+        return out
 
 
-def euclidian_distance(a, b):
+def extract_k_centers(X, k):
+    pass
+
+
+def euclidian_distance(u, v):
     """
     Compute the Euclidian distance between two points
     """
     # vectors must be equal size !
-    assert len(a) == len(b)
+    assert len(u) == len(v)
+
     res = 0
-    for i, j in list(zip(a, b)):
-        res += math.sqrt((i-j)**2)
+    for i in range(len(u)):
+        res += (u[i]-v[i])**2
 
-    return res
+    return math.sqrt(res)
 
 
-def kernel(x, mu):
+def kernel(x, mu, beta):
     """
     Apply the Gaussian kernel to an input
     """
-    diff = euclidian_distance(x, mu)
-    return math.exp(-beta*(diff**2))
+    d = euclidian_distance(x, mu)
+    return math.exp(-beta*(d**2))
 
 
-def preprocess(X, clusters_centers):
+def preprocess(X, clusters_centers, beta):
     """
     Apply the radial basis function to all inputs
     """
-    inputs = []
-    for x in X:
-        processed_input = []
-        for center in clusters_centers:
-            # computes the Gaussian kernel for one center
-            processed_input.append((kernel(x, center)))
 
-        # add the processed input
-        inputs.append(processed_input)
+    processed_input = []
+    for center in clusters_centers:
+        # computes the Gaussian kernel for one center (e.g. one node of the RBFNet)
+        phi = kernel(X, center, beta)
+        processed_input.append(phi)
 
-    return torch.tensor(inputs, dtype=torch.float32)
+    return torch.tensor(processed_input, dtype=torch.float32)
+
+
+def compute_sigma(k_centers):
+    """
+    Compute the sigma using the centers
+        (see 'Radial basis functions: normalised or lln-norn1alised?' by M.R. Cowper)
+    """
+    d_max = 0
+    for center in k_centers:
+        for center2 in k_centers:
+            d = euclidian_distance(center, center2)
+            d_max = d if d > d_max else d_max
+
+    return d_max/math.sqrt(2*len(k_centers))
 
 
 if __name__ == '__main__':
-    # model = RBFNet(10, 1)
-    # criterion = torch.nn.MSELoss(reduction='sum')
-    # optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
-    #
-    # X = [[1.4, 3.4, 4, 6, 2.8, 1.4, 2.4, 4.7, 56.8, 7],
-    #      [3, 8.4, 6.7, 6.8, 5.6, 1.4, 45.3, 23.4, 9, 6.3],
-    #      [9, 3.4, 3.2, 6, 5.2, 1.7, 3.4, 4, 2, 7]]
-    # Y = [[3], [5], [6]]
-    #
-    # for x, y in zip(X, Y):
-    #     x = torch.tensor(x, requires_grad=True, dtype=torch.float32)
-    #     y = torch.tensor(y, dtype=torch.float32)
-    #
-    #     y_pred = model(x)
-    #     loss = criterion(y_pred, y)
-    #     print(loss.item())
-    #
-    #     optimizer.zero_grad()
-    #     loss.backward()
-    #     optimizer.step()
+    k_clusters = 10
+    epochs = 50
 
-    k_centers = [[1, 2], [1, 4], [3, 4], [4, 1], [2, 1], [5, 2]]
-    X_train = [[1, 2], [1, 4], [3, 4], [4, 1], [2, 1], [5, 2]]
-    Y_train = [0, 0, 0, 1, 1, 1]
-    model = RBFNet(k_centers)
+    # X_train = []
+    # y_train = []
+    # for onsenfou in range(50):
+    #     a, b = random.randint(0, 10), random.randint(0, 10)
+    #     X_train.append([a, b])
+    #     if a < b:
+    #         y_train.append(-1)
+    #     else:
+    #         y_train.append(1)
+    #
+    # print(X_train)
+    # print(y_train)
 
-    x = [[2, 7]]
-    print(model.predict(x))
+    # Dataset
+    NUM_SAMPLES = 100
+    X_train = np.random.uniform(0., 1., NUM_SAMPLES)
+    X_train = np.sort(X_train, axis=0)
+    noise = np.random.uniform(-0.1, 0.1, NUM_SAMPLES)
+    y_train = np.sin(2 * np.pi * X_train) + noise
 
+
+    sigma = compute_sigma(k_centers)
+    beta = 1 / (2 * (sigma ** 2))
+
+    model = RBFNet(k_centers, beta)
+    loss = model.fit(X_train, y_train, epochs=epochs)
+
+    plt.plot(range(epochs), loss)
+    plt.show()
 

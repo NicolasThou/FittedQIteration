@@ -293,6 +293,7 @@ if __name__ == '__main__':
     Number_of_iteration = 200  # number of iterations
     F = first_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 0)
+    model.save('parametric_models/Q.h5')
 
 
     print("=======================================================================================")
