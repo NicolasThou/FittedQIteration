@@ -12,7 +12,6 @@ import trajectory
 import save_simulation as ss
 
 
-
 Br = 1  # bound value for the reward
 
 
