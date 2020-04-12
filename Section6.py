@@ -1,19 +1,10 @@
-from matplotlib import pyplot as plt
-from joblib import load, dump
-import math
-import random
-import domain
-import numpy as np
-from random import seed
-from random import randrange
-from random import random
-from math import exp
-import keras.backend as K
 from keras import *
-from keras.layers import LSTM
 from keras.models import load_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
+import numpy as np
+from matplotlib import pyplot as plt
+from joblib import load, dump
 import os
 from Section2 import *
 from section5 import *
@@ -25,11 +16,6 @@ gamma = 0.95
 # alpha is the learning ration associated with the Q-learning, not the learning rate of SGD !!
 alpha = 0.05
 
-
-# ----------------------- Neural Network -------------------------
-
-
-# function intermediate to compute the temporal difference delta(x, u) = r + gamma * max(Q_N_1(x_suivant, u)) - Q_N_1(x,u)
 
 def delta(step, model, model_type):
     """
@@ -62,9 +48,6 @@ def delta(step, model, model_type):
 
     return result
 
-
-# Build training set input : (x,u)
-# 					 output : Q_N_1 + alpha * delta(x,u)
 
 def build_training_set_parametric_Q_Learning(F, model_build, model_type):
     """
@@ -118,7 +101,7 @@ Q(x, u) and the learning rate is NON CONSTANT because it depends on the temporal
 """
 
 
-def new_baseline_model():
+def NeuralNetwork():
     """
     Define base model for artificial neural network
     """
@@ -127,7 +110,6 @@ def new_baseline_model():
     model_baseline.add(Dense(10, input_dim=3, kernel_initializer='normal', activation='relu'))
     model_baseline.add(Dropout(0.4))  # avoid overfitting
     model_baseline.add(Dense(5, kernel_initializer='normal', activation='relu'))
-    # model_baseline.add(LSTM(units=64))
     model_baseline.add(Dropout(0.4))  # avoid overfitting
     model_baseline.add(Dense(1, kernel_initializer='normal'))
 
@@ -177,7 +159,7 @@ def Q_learning_parametric_function(F, N, model_type):
 
     # Initialize the model
     if model_type == 'NN':
-        model_Q_learning = new_baseline_model()
+        model_Q_learning = NeuralNetwork()
     else:
         model_Q_learning = RBFNet(k_centers=4)
 
@@ -187,10 +169,8 @@ def Q_learning_parametric_function(F, N, model_type):
         print()
 
         # build batch trajectory with 100 random samples of F
-        indexes = np.random.randint(len(F), size=100)
-        f = []
-        for i in indexes:
-            f.append(F[i])
+        idx = np.random.choice(range(len(F)), size=200).tolist()
+        f = np.array(F)[idx].tolist()
 
         if k == 0:
             X, y = build_training_set_parametric_Q_Learning(f, None, model_type)
@@ -209,40 +189,8 @@ def Q_learning_parametric_function(F, N, model_type):
 
     return model_Q_learning, temporal_difference
 
-"""
-=========================================================
-"""
-
-def make_y(l):
-    test = []
-    for i in range(len(l)):
-        test.append([l[i]])
-    return test
-
-def make_X(N):
-    test = []
-    for i in range(N):
-        test.append([i])
-    return test
-
-
-# ----------------------- Derive the policy -------------------------
-
-# policy(x) ----> take the argmax(Q(x,u1), Q(x, u2))
-# return the u
-
-
-def policy(x, model_policy):
-    """
-    policy of the model Q
-    """
-    x_1 = np.array([[x[0], x[1], 4]])
-    x_2 = np.array([[x[0], x[1], -4]])
-    return np.argmax([model_policy.predict(x_1)[0][0], model_policy.predict(x_2)[0][0]])
-
 
 # ------------------------ PLOT CURVE AND TENDANCY ---------------
-
 def show(X, y, title, xlabel, ylabel):
     """
     Argument:
@@ -266,23 +214,9 @@ def show(X, y, title, xlabel, ylabel):
     plt.ylabel(ylabel)
     plt.show()
 
-# ----------------------- Expected Return of mu* ---------------------------------
-
-# Calculate J with the policy mu*
-
-
-# ----------------------- Compare method DNFQI and Q-Learning with Function Approximators -------------------------
-
-# Design an experiment protocol to compare FQI and parametric Q-learning with
-# both approximation architectures
-
-# First, compute the speed between FQI and parametric Q-learning to compute
-# Second, compare memory complexity, don't have to store every Q function
-# Compare the result, the score of Q(x, u) ????
-
 
 if __name__ == '__main__':
-    # torch.device("cuda:0")
+    torch.device("cuda:0")
 
     # print("=======================================================================================")
     # print("================================= TEST delta ==========================================")
@@ -305,20 +239,15 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    Number_of_iteration = 100  # number of iterations
-    F = first_generation_set_one_step_system_transition(500)
-    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'RBFN')
-    dump(model, 'parametric_models/Q.joblib')
-    dump(delta_test, 'delta.joblib')
-    # model = load_model('parametric_models/NN.h5')
-    # model = load('parametric_models/RBFN_k_5.joblib')
-    # delta_test = load('delta.joblib')
+    Number_of_iteration = 50  # number of iterations
+    F = second_generation_set_one_step_system_transition(5000)
+    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'NN')
 
-    print("=======================================================================================")
-    print("=========================== delta for each Q during Q-learning ========================")
-    print("=======================================================================================")
-
-    title = 'Result of the temporal difference along the iterations'
-    xlabel = 'Number of Iteration'
-    ylabel = 'Temporal Difference'
-    show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)
+    # print("=======================================================================================")
+    # print("=========================== delta for each Q during Q-learning ========================")
+    # print("=======================================================================================")
+    #
+    # title = 'Result of the temporal difference along the iterations'
+    # xlabel = 'Number of Iteration'
+    # ylabel = 'Temporal Difference'
+    # show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)

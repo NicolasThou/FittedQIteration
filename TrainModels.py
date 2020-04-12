@@ -72,5 +72,3 @@ if __name__ == '__main__':
     F = s5.second_generation_set_one_step_system_transition(T)
     models = s5.fitted_Q_iteration_second_stopping_rule(F, s5.baseline_model(), batch_size=bsize, epoch=ep)
     dump(models, 'models/neural_net_second_2.joblib')
-
-

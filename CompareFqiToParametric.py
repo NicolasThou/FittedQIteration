@@ -8,9 +8,10 @@ import time
 import section5 as s5
 
 
-def compare_algorithms(models_list, models_name, error_threshold=0.1):
+# ---------------- Compare method FQI and Q-Learning with Function Approximators ---------------------
+def compare_algorithms(models_list, models_name, colors, error_threshold=0.1):
     """
-    Plot the expected return for the differents algorithms model
+    Plot the expected return for the differents algorithms model and the time consumed
     """
     assert len(models_list) == len(models_name)
 
@@ -18,8 +19,8 @@ def compare_algorithms(models_list, models_name, error_threshold=0.1):
     N = int(np.ceil(np.log(error_threshold*(1 - domain.gamma))/np.log(domain.gamma)))
 
     # set of states X used to have an approximation of J
-    p_values = [random.uniform(-1, 1) for i in range(1)]
-    s_values = [random.uniform(-3, 3) for i in range(1)]
+    p_values = [random.uniform(-1, 1) for i in range(15)]
+    s_values = [random.uniform(-3, 3) for i in range(15)]
 
     # values of J for each model
     j = []
@@ -48,13 +49,14 @@ def compare_algorithms(models_list, models_name, error_threshold=0.1):
 
     # plot the expected returns
     plt.subplot(2, 1, 1)
-    plt.bar(range(len(models_list)), j)
+    plt.bar(range(len(models_list)), j, color=colors)
     plt.xticks(range(len(models_list)), models_name)
     plt.ylabel('$J^{\hat{\mu_{N}^{*}}}$', rotation=0)
     plt.title('Expected return over infinite time horizon for each model')
 
+    # Plot the computation times
     plt.subplot(2, 1, 2)
-    plt.bar(range(len(models_list)), times)
+    plt.bar(range(len(models_list)), times, color=colors)
     plt.xticks(range(len(models_list)), models_name)
     plt.ylabel('t', rotation=0)
     plt.title('Computation time for each model')
@@ -65,8 +67,11 @@ def compare_algorithms(models_list, models_name, error_threshold=0.1):
 
 
 if __name__ == '__main__':
-    models_name = ['Neural Network', 'Linear Regression', 'Extra Tree']
-    models_path = ['models/neural_net_first_2.joblib', 'models/regression_first_2.joblib', 'models/tree_first_2.joblib']
+    models_name = ['NN', 'LR', 'ET', 'NN', 'RBF']
+    models_path = ['models/neural_net_second_1.joblib', 'models/regression_second_1.joblib',
+                   'models/tree_second_1.joblib', 'parametric_models/NeuralNet.joblib', 'parametric_models/RBFN.joblib']
+    # FQI = blue  |  Parametric Q-learning = red
+    colors = ['blue', 'blue', 'blue', 'red', 'red']
 
     models = []
     for name in models_path:
@@ -75,5 +80,5 @@ if __name__ == '__main__':
         else:
             models.append(load(name))
 
-    j, times = compare_algorithms(models, models_name)
+    j, times = compare_algorithms(models, models_name, colors)
     print(times)

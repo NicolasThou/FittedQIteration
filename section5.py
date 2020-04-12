@@ -98,8 +98,8 @@ def second_generation_set_one_step_system_transition(N):
 
     while count < N:
         # draw randomly a state in the domain
-        p = np.random.uniform(-1, 1), 2
-        s = np.random.uniform(-3, 3), 2
+        p = np.random.uniform(-1, 1)
+        s = np.random.uniform(-3, 3)
 
         x = np.array([p, s])
 
@@ -341,16 +341,10 @@ def compute_J(state, model, N):
     else:
         p, s = state[0], state[1]
 
-        # compute which action leads to best Q value (optimal policy)
-        first_action_input = np.array([[p, s, 4]])
-        second_action_input = np.array([[p, s, -4]])
-        q = [model.predict(first_action_input), model.predict(second_action_input)]
-        if q[0] > q[1]:
-            mu = 4
-        else:
-            mu = -4
+        # build the policy from the model
+        policy = Policy(model)
 
-        return domain.r(state, mu) + domain.gamma*compute_J(domain.f(state, mu), model, N-1)
+        return domain.r(state, policy([p, s])) + domain.gamma*compute_J(domain.f(state, policy([p, s])), model, N-1)
 
 
 def visualize_expected_return_policy(models, error_threshold=0.1):
