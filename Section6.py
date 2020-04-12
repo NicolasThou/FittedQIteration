@@ -256,7 +256,7 @@ def policy(x, model_policy):
 
 # ------------------------ PLOT CURVE AND TENDANCY ---------------
 
-def show(result, N_iteration):
+def show(X, y, title, xlabel, ylabel):
     """
     Argument:
     ========
@@ -265,21 +265,19 @@ def show(result, N_iteration):
 
     """
 
-    y = make_y(result)
-    X_train = make_X(N_iteration)
     # Fit
     poly_reg = PolynomialFeatures(degree=4)
-    X_poly = poly_reg.fit_transform(X_train)
+    X_poly = poly_reg.fit_transform(X)
     poly_reg.fit(X_poly, y)
     lin_reg_2 = LinearRegression()
     lin_reg_2.fit(X_poly, y)
     # Visualize
-    plt.scatter(X_train, y, color='red')
-    plt.plot(X_train, lin_reg_2.predict(poly_reg.fit_transform(X_train)), color='blue', linewidth=3)
+    plt.scatter(X, y, color='red')
+    plt.plot(X, lin_reg_2.predict(poly_reg.fit_transform(X)), color='blue', linewidth=3)
 
-    plt.title('Result of the temporal difference along the iterations')
-    plt.xlabel('Number of Iteration')
-    plt.ylabel('Temporal Difference')
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.show()
 
 # ----------------------- Expected Return of mu* ---------------------------------
@@ -329,6 +327,9 @@ if __name__ == '__main__':
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
 
-    show(delta_test, Number_of_iteration)
+    title = 'Result of the temporal difference along the iterations'
+    xlabel = 'Number of Iteration'
+    ylabel = 'Temporal Difference'
+    show(delta_test, Number_of_iteration, title, xlabel, ylabel)
 
 
