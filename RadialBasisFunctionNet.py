@@ -148,7 +148,7 @@ def extract_centers(X, k):
 
 
 if __name__ == '__main__':
-    torch.device("cuda:0")
+    # torch.device("cuda:0")
 
     # TRAIN
     NUM_SAMPLES = 500
