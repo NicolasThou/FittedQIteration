@@ -39,8 +39,8 @@ def initial_state():
     ======
     The state [p0, s0] which is an array
     """
-    p0 = round(np.random.uniform(-0.1, 0.1), 2)
-    s0 = round(0, 2)
+    p0 = np.random.uniform(-0.1, 0.1)
+    s0 = 0
     return np.array([p0, s0])
 
 
@@ -61,7 +61,7 @@ def f(x, u):
         p = previous_p + integration_step * previous_s
         s = previous_s + integration_step * f_s(previous_p, previous_s, u)
 
-    p, s = round(p, 2), round(s, 2)
+    p, s = p, s
     return np.array([p, s])
 
 

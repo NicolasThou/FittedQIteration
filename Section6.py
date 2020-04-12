@@ -12,11 +12,13 @@ import keras.backend as K
 from keras import *
 from keras.layers import LSTM
 from keras.models import load_model
-from Section2 import *
-from section5 import *
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 import os
+from Section2 import *
+from section5 import *
+from RadialBasisFunctionNet import *
+
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 gamma = 0.95
@@ -29,38 +31,42 @@ alpha = 0.05
 
 # function intermediate to compute the temporal difference delta(x, u) = r + gamma * max(Q_N_1(x_suivant, u)) - Q_N_1(x,u)
 
-def delta(step, model_delta):
+def delta(step, model, model_type):
     """
     Compute the temporal difference state action
 
     Argument:
     =======
     step = one step system transition (x, u, r, x_next)
-    model_delta = Function approximator Q function
+    model = Function approximator Q function
 
     Return:
     ======
     return float, wich is the new temporal difference
     """
 
-    # the model must be defined !
-    #assert model_delta is not None
-    if model_delta is None:
+    # assert model_delta is not None  # the model must be defined !
+
+    if model is None:
         result = step[2]
     else:
         x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
         x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
         x = np.array([[step[0][0], step[0][1], step[1]]])
-        result = step[2] + gamma * np.max(
-            [model_delta.predict(x_suivant1)[0][0], model_delta.predict(x_suivant2)[0][0]]) - model_delta.predict(x)[0][
-                         0]
+        if model_type == 'NN':
+            result = step[2] + gamma * np.max([model.predict(x_suivant1)[0][0], model.predict(x_suivant2)[0][0]]) - \
+                     model.predict(x)[0][0]
+        else:
+            result = step[2] + gamma * np.max([model.predict(x_suivant1).item(), model.predict(x_suivant2).item()]) - \
+                     model.predict(x).item()
+
     return result
 
 
 # Build training set input : (x,u)
 # 					 output : Q_N_1 + alpha * delta(x,u)
 
-def build_training_set_parametric_Q_Learning(F, model_build):
+def build_training_set_parametric_Q_Learning(F, model_build, model_type):
     """
     Build the training set for training the parametric
     approximation architecture for the Q-Learning
@@ -82,15 +88,17 @@ def build_training_set_parametric_Q_Learning(F, model_build):
         if is_final_state(step[3]):
             o = step[2]
         else:
-            #o = delta(step, model_build)
             if model_build is None:
                 o = step[2]
             else:
                 x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
                 x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
-                o = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], model_build.predict(x_suivant2)[0][0]]) - model_build.predict(np.array([i]))[0][0]
-
-
+                if model_type == 'NN':
+                    o = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], model_build.predict(x_suivant2)
+                    [0][0]]) - model_build.predict(np.array([i]))[0][0]
+                else:
+                    o = step[2] + gamma * np.max([model_build.predict(x_suivant1).item(), model_build.predict(x_suivant2)
+                                                 .item()]) - model_build.predict(np.array([i])).item()
 
         # add the new sample in the training set
         inputs.append(i)
@@ -131,28 +139,6 @@ def new_baseline_model():
 
     return model_baseline
 
-def new_baseline_model_RBF():
-    """
-    Define base model for artificial neural network
-    """
-    # create model
-    model_baseline = Sequential()
-    model_baseline.add(Dense(10, input_dim=3, kernel_initializer='normal', activation='relu'))
-    model_baseline.add(Dropout(0.4))  # avoid overfitting
-    model_baseline.add(Dense(5, kernel_initializer='normal', activation='relu'))
-    # model_baseline.add(LSTM(units=64))
-    model_baseline.add(Dropout(0.4))  # avoid overfitting
-    model_baseline.add(Dense(1, kernel_initializer='normal'))
-
-    # Compile model_baseline
-    sgd = optimizers.SGD(learning_rate=0.01, momentum=0.0, nesterov=False, clipvalue=0.5, clipnorm=1.)
-
-    # Choose loss parameter : 'mse' or custom_loss
-    model_baseline.compile(loss='MSE', optimizer=sgd, metrics=['mse'])
-
-    return model_baseline
-
-
 """
 =========================================================
 Q-Learning Algorithm with parametric approximator architecture
@@ -172,7 +158,7 @@ Pseudo-code Cannot work with Q-table because of the infinite number of state so:
 """
 
 
-def Q_learning_parametric_function(F, N, a):
+def Q_learning_parametric_function(F, N, model_type):
     """
     new_baseline_model() use a customize loss which return only the y_pred.
     Plus, we have the parameter sample_weight on the fit() method which multiply each y_pred by the correct
@@ -180,22 +166,20 @@ def Q_learning_parametric_function(F, N, a):
 
     Then we use the SGD on the Loss : y_pred * delta in order to optimize all the parameters of
     the neural network.
-
-    Argument:
-    ========
-    F the
     """
+    assert (model_type == 'NN' or model_type == 'RBFN')
 
     # store the delta along the training
     temporal_difference = []
+
     # test for plotting delta w.r.t one input and the model_Q_learning
     t = [np.array([-0.44, -1.43]), -4, 0, np.array([-0.92, 1.24])]  # one step system transition fixed
 
-    # Initialize the neural network
-    if a == 0:
+    # Initialize the model
+    if model_type == 'NN':
         model_Q_learning = new_baseline_model()
     else:
-        model_Q_learning = new_baseline_model_RBF()
+        model_Q_learning = RBFNet(k_centers=4)
 
     for k in range(N):
         print()
@@ -209,14 +193,17 @@ def Q_learning_parametric_function(F, N, a):
             f.append(F[i])
 
         if k == 0:
-            X, y = build_training_set_parametric_Q_Learning(f, None)
+            X, y = build_training_set_parametric_Q_Learning(f, None, model_type)
         else:
-            X, y = build_training_set_parametric_Q_Learning(f, model_Q_learning)
+            X, y = build_training_set_parametric_Q_Learning(f, model_Q_learning, model_type)
 
-        model_Q_learning.fit(X, y, batch_size=32, epochs=50, verbose=0)
+        if model_type == 'NN':
+            model_Q_learning.fit(X, y, batch_size=32, epochs=50, verbose=0)
+        else:
+            model_Q_learning.fit(X, y, epochs=100, verbose=False)
 
         # computes for each iteration the delta with the updated model
-        d = delta(t, model_Q_learning)
+        d = delta(t, model_Q_learning, model_type)
         print('delta = {}'.format(d))
         temporal_difference.append(d)
 
@@ -264,7 +251,6 @@ def show(X, y, title, xlabel, ylabel):
     N_iteraion : Integer, Number of iterations we use to compute the results
 
     """
-
     # Fit
     poly_reg = PolynomialFeatures(degree=4)
     X_poly = poly_reg.fit_transform(X)
@@ -296,32 +282,37 @@ def show(X, y, title, xlabel, ylabel):
 
 
 if __name__ == '__main__':
-    print("=======================================================================================")
-    print("================================= TEST delta ==========================================")
-    print("=======================================================================================")
+    torch.device("cuda:0")
 
-    F_test = first_generation_set_one_step_system_transition(400)
-    model2 = load_model('model2.h5')
-    print(delta(F_test[12], model2))
-    print(model2.predict(np.array([[1, 2, 4]])))
-
-    print("=======================================================================================")
-    print("=================== Build Training Set for Parametric Q-Learning ======================")
-    print("=======================================================================================")
-
-    X, y = build_training_set_parametric_Q_Learning(F_test, model2)
-    print(X, type(X), np.shape(X))
-    print(y, type(y), np.shape(y))
+    # print("=======================================================================================")
+    # print("================================= TEST delta ==========================================")
+    # print("=======================================================================================")
+    #
+    # F_test = first_generation_set_one_step_system_transition(400)
+    # model2 = load_model('model2.h5')
+    # print(delta(F_test[12], model2))
+    # print(model2.predict(np.array([[1, 2, 4]])))
+    #
+    # print("=======================================================================================")
+    # print("=================== Build Training Set for Parametric Q-Learning ======================")
+    # print("=======================================================================================")
+    #
+    # X, y = build_training_set_parametric_Q_Learning(F_test, model2)
+    # print(X, type(X), np.shape(X))
+    # print(y, type(y), np.shape(y))
 
     print("=======================================================================================")
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
     Number_of_iteration = 100  # number of iterations
-    F = first_generation_set_one_step_system_transition(5000)
-    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 0)
-    model.save('parametric_models/Q.h5')
-
+    F = first_generation_set_one_step_system_transition(500)
+    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'RBFN')
+    dump(model, 'parametric_models/Q.joblib')
+    dump(delta_test, 'delta.joblib')
+    # model = load_model('parametric_models/NN.h5')
+    # model = load('parametric_models/RBFN_k_5.joblib')
+    # delta_test = load('delta.joblib')
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
@@ -330,6 +321,4 @@ if __name__ == '__main__':
     title = 'Result of the temporal difference along the iterations'
     xlabel = 'Number of Iteration'
     ylabel = 'Temporal Difference'
-    show(delta_test, Number_of_iteration, title, xlabel, ylabel)
-
-
+    show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)

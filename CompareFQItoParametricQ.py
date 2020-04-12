@@ -13,8 +13,8 @@ def comapre_algorithms(models_list, models_name, error_threshold=0.1):
     N = int(np.ceil(np.log(error_threshold*(1 - domain.gamma))/np.log(domain.gamma)))
 
     # set of states X used to have an approximation of J
-    p_values = [round(random.uniform(-1, 1), 2) for i in range(5)]
-    s_values = [round(random.uniform(-3, 3), 2) for i in range(5)]
+    p_values = [random.uniform(-1, 1) for i in range(5)]
+    s_values = [random.uniform(-3, 3) for i in range(5)]
 
     # values of J for each model
     j = []
@@ -39,5 +39,3 @@ def comapre_algorithms(models_list, models_name, error_threshold=0.1):
     plt.xlabel('models')
     plt.ylabel('$J^{\hat{\mu_{N}^{*}}}$', rotation=0)
     plt.show()
-
-

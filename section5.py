@@ -98,8 +98,8 @@ def second_generation_set_one_step_system_transition(N):
 
     while count < N:
         # draw randomly a state in the domain
-        p = round(np.random.uniform(-1, 1), 2)
-        s = round(np.random.uniform(-3, 3), 2)
+        p = np.random.uniform(-1, 1), 2
+        s = np.random.uniform(-3, 3), 2
 
         x = np.array([p, s])
 
@@ -293,7 +293,7 @@ def visualize_Q(model):
             for p in p_space:
                 # apply the model for this state/action pair
                 input = np.array([[p, s, u]])
-                q_s.append(round(model.predict(input).item(), 2))
+                q_s.append(model.predict(input).item())
 
             q.append(q_s)
 
@@ -364,8 +364,8 @@ def visualize_expected_return_policy(models, error_threshold=0.1):
     n = min(50, len(models))
 
     # set of states X used to have an approximation of J
-    p_values = [round(random.uniform(-1, 1), 2) for i in range(5)]
-    s_values = [round(random.uniform(-3, 3), 2) for i in range(5)]
+    p_values = [random.uniform(-1, 1) for i in range(5)]
+    s_values = [random.uniform(-3, 3) for i in range(5)]
 
     # values of J along N
     j = []
@@ -413,6 +413,3 @@ if __name__ == '__main__':
     # display the trajectory created by the model on a GIF file
     ss.visualize_policy(x, policy, 'ExtraTreeVisualization')
     print('ExtraTreeVisualization.gif file saved.')
-
-
-

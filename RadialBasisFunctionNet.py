@@ -36,7 +36,7 @@ class RBFNet:
         # beta = 1 / (2 * (sigma ** 2))
         self.beta = None
 
-    def fit(self, X, Y, epochs=50):
+    def fit(self, X, Y, epochs=50, verbose=True):
         """
         Train the RBFNet model
         :return : the loss list
@@ -78,7 +78,8 @@ class RBFNet:
                 optimizer.step()
 
             error.append(np.mean(l))
-            print('epoch {}  |  loss : {}'.format(e, np.mean(l)))
+            if verbose:
+                print('epoch {}  |  loss : {}'.format(e, np.mean(l)))
 
         return error
 
@@ -141,7 +142,7 @@ def extract_centers(X, k):
     centers = kmeans2(np.array(X).astype(float), k, minit='points')[0].tolist()
 
     # reshape the list to be 2d array
-    centers = np.reshape(centers, (-1, 1)).tolist()
+    centers = np.reshape(centers, (-1, np.shape(X)[1])).tolist()
 
     return centers
 
