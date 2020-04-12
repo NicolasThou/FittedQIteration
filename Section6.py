@@ -74,14 +74,7 @@ def build_training_set_parametric_Q_Learning(F, model_build, model_type):
             if model_build is None:
                 o = step[2]
             else:
-                x_suivant1 = np.array([[step[3][0], step[3][1], 4]])
-                x_suivant2 = np.array([[step[3][0], step[3][1], -4]])
-                if model_type == 'NN':
-                    o = step[2] + gamma * np.max([model_build.predict(x_suivant1)[0][0], model_build.predict(x_suivant2)
-                    [0][0]]) - model_build.predict(np.array([i]))[0][0]
-                else:
-                    o = step[2] + gamma * np.max([model_build.predict(x_suivant1).item(), model_build.predict(x_suivant2)
-                                                 .item()]) - model_build.predict(np.array([i])).item()
+                o = delta(step, model, model_type)
 
         # add the new sample in the training set
         inputs.append(i)
@@ -169,7 +162,7 @@ def Q_learning_parametric_function(F, N, model_type):
         print()
 
         # build batch trajectory with 100 random samples of F
-        idx = np.random.choice(range(len(F)), size=200).tolist()
+        idx = np.random.choice(range(len(F)), size=500).tolist()
         f = np.array(F)[idx].tolist()
 
         if k == 0:
@@ -205,6 +198,7 @@ def show(X, y, title, xlabel, ylabel):
     poly_reg.fit(X_poly, y)
     lin_reg_2 = LinearRegression()
     lin_reg_2.fit(X_poly, y)
+
     # Visualize
     plt.scatter(X, y, color='red')
     plt.plot(X, lin_reg_2.predict(poly_reg.fit_transform(X)), color='blue', linewidth=3)
@@ -239,15 +233,15 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    Number_of_iteration = 50  # number of iterations
+    Number_of_iteration = 100  # number of iterations
     F = second_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'NN')
 
-    # print("=======================================================================================")
-    # print("=========================== delta for each Q during Q-learning ========================")
-    # print("=======================================================================================")
-    #
-    # title = 'Result of the temporal difference along the iterations'
-    # xlabel = 'Number of Iteration'
-    # ylabel = 'Temporal Difference'
-    # show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)
+    print("=======================================================================================")
+    print("=========================== delta for each Q during Q-learning ========================")
+    print("=======================================================================================")
+
+    title = 'Result of the temporal difference along the iterations'
+    xlabel = 'Number of Iteration'
+    ylabel = 'Temporal Difference'
+    show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)
