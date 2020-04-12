@@ -179,7 +179,7 @@ def Q_learning_parametric_function(F, N, model_type):
     if model_type == 'NN':
         model_Q_learning = new_baseline_model()
     else:
-        model_Q_learning = RBFNet(k_centers=4)
+        model_Q_learning = RBFNet(k_centers=5)
 
     for k in range(N):
         print()
@@ -187,10 +187,8 @@ def Q_learning_parametric_function(F, N, model_type):
         print()
 
         # build batch trajectory with 100 random samples of F
-        indexes = np.random.randint(len(F), size=100)
-        f = []
-        for i in indexes:
-            f.append(F[i])
+        idx = np.random.choice(range(len(F)), size=500).tolist()
+        f = np.array(F)[idx].tolist()
 
         if k == 0:
             X, y = build_training_set_parametric_Q_Learning(f, None, model_type)
@@ -305,8 +303,8 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    Number_of_iteration = 100  # number of iterations
-    F = first_generation_set_one_step_system_transition(500)
+    Number_of_iteration = 50  # number of iterations
+    F = first_generation_set_one_step_system_transition(5000)
     model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'RBFN')
     dump(model, 'parametric_models/Q.joblib')
     dump(delta_test, 'delta.joblib')
