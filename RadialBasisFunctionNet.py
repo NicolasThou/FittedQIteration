@@ -1,13 +1,16 @@
 import torch.nn
+from scipy.cluster.vq import kmeans2
+from scipy.spatial.distance import euclidean
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from scipy.cluster.vq import kmeans2
-from scipy.spatial.distance import euclidean
-import Section6 as s6
 
 
 class RBFLayer(torch.nn.Module):
+    """
+    This class defines a Radial Basis Function Network layer.
+    We custom it to perform the first layer of comparison with the centroids
+    """
     def __init__(self, D_in, D_out):
         super(RBFLayer, self).__init__()
         self.linear = torch.nn.Linear(D_in, D_out)
@@ -27,6 +30,9 @@ class RBFLayer(torch.nn.Module):
 
 
 class RBFNet:
+    """
+    This class implements the Radial Basis Function Network
+    """
     def __init__(self, k_centers):
         self.layer = RBFLayer(k_centers, 1)
 
@@ -38,7 +44,8 @@ class RBFNet:
 
     def fit(self, X, Y, epochs=50, verbose=True):
         """
-        Train the RBFNet model
+        Train the RBFNet model.
+        The cendroids will be deduced from the training sample using k-mean algorithm (k is defined in the __init__)
         :return : the loss list
         """
         # compute the centers
@@ -148,8 +155,6 @@ def extract_centers(X, k):
 
 
 if __name__ == '__main__':
-    # torch.device("cuda:0")
-
     # TRAIN
     NUM_SAMPLES = 500
     X_train = np.random.uniform(0., 1., NUM_SAMPLES)

@@ -8,7 +8,6 @@ import copy as cp
 from joblib import load
 import random
 import domain
-import trajectory
 import save_simulation as ss
 
 
@@ -45,6 +44,18 @@ def baseline_model():
     return model
 
 
+def random_policy(x):
+    """
+    return, in a randomly way, 4 or -4
+
+    Return:
+    ======
+    return an action
+    """
+    power = np.random.randint(0, 2)
+    return ((-1) ** power) * 4
+
+
 def first_generation_set_one_step_system_transition(N):
     """
     First strategies for generating sets of one-step system transitions that will be
@@ -59,7 +70,7 @@ def first_generation_set_one_step_system_transition(N):
     transitions = []
     x = domain.initial_state()
     while count < N:
-        u = trajectory.random_policy(x)
+        u = random_policy(x)
         r = domain.r(x, u)
         next_x = domain.f(x, u)
 
@@ -104,7 +115,7 @@ def second_generation_set_one_step_system_transition(N):
         x = np.array([p, s])
 
         # apply a random policy
-        u = trajectory.random_policy(x)
+        u = random_policy(x)
 
         # observe reward and next state
         r = domain.r(x, u)
@@ -387,7 +398,7 @@ if __name__ == '__main__':
     print("=======================================================================================")
     print("============================ Visualize Q for Neural Network ===========================")
     print("=======================================================================================")
-    nn_model = load('models/neural_net_first_1.joblib')[-1]  # visualize Qn
+    nn_model = load('models/neural_net_first_1.joblib')[-1]
     visualize_Q(nn_model)
 
     print("=======================================================================================")
@@ -395,15 +406,14 @@ if __name__ == '__main__':
     print("=======================================================================================")
     linreg_model = load('models/regression_second_1.joblib')
     print('Linear Regression list contains {} models'.format(len(linreg_model)))
-    # visualize_expected_return_policy(linreg_model)
+    visualize_expected_return_policy(linreg_model)
 
     print("=======================================================================================")
     print("======================= Visualize Hill Trajectory for ExtraTree =======================")
     print("=======================================================================================")
     extree_model = load('models/tree_second_2.joblib')[-1]
     policy = Policy(extree_model)
-    # start from an initial state
-    x = domain.initial_state()
+    x = domain.initial_state()  # start from an initial state
     # display the trajectory created by the model on a GIF file
     ss.visualize_policy(x, policy, 'ExtraTreeVisualization')
     print('ExtraTreeVisualization.gif file saved.')

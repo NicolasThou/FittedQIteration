@@ -1,11 +1,10 @@
-import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-import domain
 from joblib import load
 import time
-import section5 as s5
+import domain
+import Section5 as s5
 
 
 # ---------------- Compare method FQI and Q-Learning with Function Approximators ---------------------
@@ -41,9 +40,11 @@ def compare_algorithms(models_list, models_name, colors, error_threshold=0.1):
                 expected_return = s5.compute_J((p, s), model, N)
                 end = time.time()
 
+                # add the expected return and value of J
                 expected_return_over_X.append(expected_return)
                 model_time.append(end-start)
 
+        # we store the average of the values for all the states
         j.append(np.mean(expected_return_over_X))
         times.append(np.mean(model_time))
 
@@ -60,7 +61,6 @@ def compare_algorithms(models_list, models_name, colors, error_threshold=0.1):
     plt.xticks(range(len(models_list)), models_name)
     plt.ylabel('t', rotation=0)
     plt.title('Computation time for each model')
-
     plt.show()
 
     return j, times
@@ -70,8 +70,7 @@ if __name__ == '__main__':
     models_name = ['NN', 'LR', 'ET', 'NN', 'RBF']
     models_path = ['models/neural_net_second_1.joblib', 'models/regression_second_1.joblib',
                    'models/tree_second_1.joblib', 'parametric_models/NeuralNet.joblib', 'parametric_models/RBFN.joblib']
-    # FQI = blue  |  Parametric Q-learning = red
-    colors = ['blue', 'blue', 'blue', 'red', 'red']
+    colors = ['blue', 'blue', 'blue', 'red', 'red']  # FQI = blue  |  Parametric Q-learning = red
 
     models = []
     for name in models_path:

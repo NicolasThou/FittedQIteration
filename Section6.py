@@ -2,19 +2,15 @@ from keras import *
 from keras.models import load_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
-import numpy as np
-from matplotlib import pyplot as plt
 from joblib import load, dump
 import os
-from Section2 import *
-from section5 import *
+import domain
+from Section5 import *
 from RadialBasisFunctionNet import *
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 gamma = 0.95
-# alpha is the learning ration associated with the Q-learning, not the learning rate of SGD !!
-alpha = 0.05
 
 
 def delta(step, model, model_type):
@@ -30,8 +26,6 @@ def delta(step, model, model_type):
     ======
     return float, wich is the new temporal difference
     """
-
-    # assert model_delta is not None  # the model must be defined !
 
     if model is None:
         result = step[2]
@@ -68,13 +62,13 @@ def build_training_set_parametric_Q_Learning(F, model_build, model_type):
     for step in F:
         i = [step[0][0], step[0][1], step[1]]
 
-        if is_final_state(step[3]):
+        if domain.is_final_state(step[3]):
             o = step[2]
         else:
             if model_build is None:
                 o = step[2]
             else:
-                o = delta(step, model, model_type)
+                o = delta(step, model_build, model_type)
 
         # add the new sample in the training set
         inputs.append(i)
@@ -113,6 +107,7 @@ def NeuralNetwork():
     model_baseline.compile(loss='MSE', optimizer=sgd, metrics=['mse'])
 
     return model_baseline
+
 
 """
 =========================================================
@@ -202,7 +197,6 @@ def show(X, y, title, xlabel, ylabel):
     # Visualize
     plt.scatter(X, y, color='red')
     plt.plot(X, lin_reg_2.predict(poly_reg.fit_transform(X)), color='blue', linewidth=3)
-
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -210,38 +204,38 @@ def show(X, y, title, xlabel, ylabel):
 
 
 if __name__ == '__main__':
-    torch.device("cuda:0")
+    print("=======================================================================================")
+    print("================================= TEST delta ==========================================")
+    print("=======================================================================================")
 
-    # print("=======================================================================================")
-    # print("================================= TEST delta ==========================================")
-    # print("=======================================================================================")
-    #
-    # F_test = first_generation_set_one_step_system_transition(400)
-    # model2 = load_model('model2.h5')
-    # print(delta(F_test[12], model2))
-    # print(model2.predict(np.array([[1, 2, 4]])))
-    #
-    # print("=======================================================================================")
-    # print("=================== Build Training Set for Parametric Q-Learning ======================")
-    # print("=======================================================================================")
-    #
-    # X, y = build_training_set_parametric_Q_Learning(F_test, model2)
-    # print(X, type(X), np.shape(X))
-    # print(y, type(y), np.shape(y))
+    F_test = first_generation_set_one_step_system_transition(400)
+    model2 = load_model('model2.h5')
+    print(delta(F_test[12], model2, 'NN'))
+    print(model2.predict(np.array([[1, 2, 4]])))
+
+    print("=======================================================================================")
+    print("=================== Build Training Set for Parametric Q-Learning ======================")
+    print("=======================================================================================")
+
+    X, y = build_training_set_parametric_Q_Learning(F_test, model2, 'NN')
+    print(X, type(X), np.shape(X))
+    print(y, type(y), np.shape(y))
 
     print("=======================================================================================")
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
+    F = second_generation_set_one_step_system_transition(5000)  # trajectory history used to train the model
     Number_of_iteration = 100  # number of iterations
-    F = second_generation_set_one_step_system_transition(5000)
-    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'NN')
+    model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'NN')  # train a model
+    dump(model, 'parametric_models/NeuralNet.joblib')  # save the model
 
     print("=======================================================================================")
     print("=========================== delta for each Q during Q-learning ========================")
     print("=======================================================================================")
 
-    title = 'Result of the temporal difference along the iterations'
-    xlabel = 'Number of Iteration'
-    ylabel = 'Temporal Difference'
+    title = 'Evolution of delta along with number of iteration'
+    xlabel = 'number of iterations'
+    ylabel = 'delta'
+    # plot the evolution of delta during training
     show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)

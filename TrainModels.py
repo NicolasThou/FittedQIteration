@@ -1,7 +1,7 @@
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.linear_model import LinearRegression
 from joblib import dump
-import section5 as s5
+import Section5 as s5
 
 
 if __name__ == '__main__':
