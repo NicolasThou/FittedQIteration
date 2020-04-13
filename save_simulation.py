@@ -214,5 +214,4 @@ def visualize_policy(x, policy, file_name):
                    save_all=True,
                    duration=100)
 
-
-
+    print('{}.gif file saved.'.format(file_name))

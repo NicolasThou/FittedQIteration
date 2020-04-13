@@ -7,8 +7,9 @@ import os
 import domain
 from Section5 import *
 from RadialBasisFunctionNet import *
+from CompareFqiToParametric import *
 
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 gamma = 0.95
 
@@ -172,7 +173,7 @@ def Q_learning_parametric_function(F, N, model_type):
 
         # computes for each iteration the delta with the updated model
         d = delta(t, model_Q_learning, model_type)
-        print('delta = {}'.format(d))
+        # print('delta = {}'.format(d))
         temporal_difference.append(d)
 
     return model_Q_learning, temporal_difference
@@ -205,19 +206,11 @@ def show(X, y, title, xlabel, ylabel):
 
 if __name__ == '__main__':
     print("=======================================================================================")
-    print("================================= TEST delta ==========================================")
-    print("=======================================================================================")
-
-    F_test = first_generation_set_one_step_system_transition(400)
-    model2 = load_model('model2.h5')
-    print(delta(F_test[12], model2, 'NN'))
-    print(model2.predict(np.array([[1, 2, 4]])))
-
-    print("=======================================================================================")
     print("=================== Build Training Set for Parametric Q-Learning ======================")
     print("=======================================================================================")
 
-    X, y = build_training_set_parametric_Q_Learning(F_test, model2, 'NN')
+    F_test = first_generation_set_one_step_system_transition(500)  # trajectory history used to train the model
+    X, y = build_training_set_parametric_Q_Learning(F_test, None, 'NN')
     print(X, type(X), np.shape(X))
     print(y, type(y), np.shape(y))
 
@@ -225,13 +218,13 @@ if __name__ == '__main__':
     print("=================== Q-Learning Algorithm parametric function ==========================")
     print("=======================================================================================")
 
-    F = second_generation_set_one_step_system_transition(5000)  # trajectory history used to train the model
+    F = second_generation_set_one_step_system_transition(5000)
     Number_of_iteration = 100  # number of iterations
     model, delta_test = Q_learning_parametric_function(F, Number_of_iteration, 'NN')  # train a model
     dump(model, 'parametric_models/NeuralNet.joblib')  # save the model
 
     print("=======================================================================================")
-    print("=========================== delta for each Q during Q-learning ========================")
+    print("======================= Delta for each iteration during Q-learning ====================")
     print("=======================================================================================")
 
     title = 'Evolution of delta along with number of iteration'
@@ -239,3 +232,22 @@ if __name__ == '__main__':
     ylabel = 'delta'
     # plot the evolution of delta during training
     show(np.reshape(range(Number_of_iteration), (-1, 1)), delta_test, title=title, xlabel=xlabel, ylabel=ylabel)
+
+    print("=======================================================================================")
+    print("========================== Compare models and learning algorithm ======================")
+    print("=======================================================================================")
+
+    models_name = ['NN', 'LR', 'ET', 'NN', 'RBF']
+    models_path = ['fqi_models/neural_net_second_1.joblib', 'fqi_models/regression_second_1.joblib',
+                   'fqi_models/tree_second_1.joblib', 'parametric_models/NeuralNet.joblib', 'parametric_models/RBFN.joblib']
+    colors = ['blue', 'blue', 'blue', 'red', 'red']  # Fitted-Q-Iteration = blue  |  Parametric Q-learning = red
+    models = []
+    for name in models_path:
+        if name[:3] == 'fqi':
+            # the object stored in the folder 'fqi_models' are list of trained models.
+            # we use only the last model of the list
+            models.append(load(name)[-1])
+        else:
+            models.append(load(name))
+
+    j, times = compare_algorithms(models, models_name, colors)

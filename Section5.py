@@ -8,7 +8,7 @@ import copy as cp
 from joblib import load
 import random
 import domain
-import save_simulation as ss
+from save_simulation import *
 
 
 Br = 1  # bound value for the reward
@@ -22,7 +22,6 @@ class Policy:
         input1 = np.array([np.append(state, 4)])
         input2 = np.array([np.append(state, -4)])
         q = [self.model.predict(input1), self.model.predict(input2)]
-
         if q[0] > q[1]:
             return 4
         else:
@@ -111,7 +110,6 @@ def second_generation_set_one_step_system_transition(N):
         # draw randomly a state in the domain
         p = np.random.uniform(-1, 1)
         s = np.random.uniform(-3, 3)
-
         x = np.array([p, s])
 
         # apply a random policy
@@ -120,7 +118,6 @@ def second_generation_set_one_step_system_transition(N):
         # observe reward and next state
         r = domain.r(x, u)
         next_x = domain.f(x, u)
-
         ht.append([x, u, r, next_x])
         count += 1
 
@@ -170,7 +167,6 @@ def build_training_set(F, Q_N_1):
             x0 = np.array([[tuple[3][0], tuple[3][1], 4]])
             x1 = np.array([[tuple[3][0], tuple[3][1], -4]])
             maximum = np.max([Q_N_1.predict(x0).item(), Q_N_1.predict(x1).item()])
-
             o = tuple[2] + domain.gamma * maximum
 
         # add the new sample in the training set
@@ -204,7 +200,6 @@ def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.001, 
 
     max = int(np.log(tolerance_fixed * ((1 - domain.gamma) ** 2) / (2 * Br)) / (np.log(domain.gamma))) + 1
     N = 0
-
     while N < max:
         # we create a new empty model
         model = cp.deepcopy(algorithm)
@@ -215,14 +210,14 @@ def fitted_Q_iteration_first_stopping_rule(F, algorithm, tolerance_fixed=0.001, 
         # get the training step built with the trajectory
         X, Y = build_training_set(F, previous_Q)
 
-        if batch_size is not None and epoch is not None:  # means that we use a neural network as a supervised learning algorithm
+        if batch_size is not None and epoch is not None:
+            # means that we use a neural network as a supervised learning algorithm
             model.fit(X, Y, batch_size=batch_size, epochs=epoch, verbose=0)
         else:  # means that we use extra-trees or linear regression
             model.fit(X, Y)
 
         # add of the Q_N function in the sequence of Q_N functions
         sequence_Q_N.append(model)
-
         N = N + 1
     return sequence_Q_N
 
@@ -265,7 +260,7 @@ def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, 
     distance = tolerance_fixed + 1
 
     N = 1
-    while distance > tolerance_fixed and N <= 50:   # TODO : somme supervised learning algorithm don't provides the convergence !!!
+    while distance > tolerance_fixed and N <= 50:  # somme supervised learning algorithm don't provide the convergence !
         # we create a new empty model
         model = cp.deepcopy(algorithm)
 
@@ -280,7 +275,6 @@ def fitted_Q_iteration_second_stopping_rule(F, algorithm, tolerance_fixed=0.01, 
         # add of the Q_N function in the sequence of Q_N functions
         sequence_Q_N.append(model)
         distance = dist(sequence_Q_N[N], sequence_Q_N[N - 1], F)
-
         N = N + 1
     return sequence_Q_N
 
@@ -314,7 +308,6 @@ def visualize_Q(model):
     vmin, vmax = np.amin(q_functions), np.amax(q_functions)
 
     fig, ax = plt.subplots(1, 2)
-
     for i, q in enumerate(q_functions):
         # plot the q-function as a heatmap
         heatmap = ax[i].imshow(q)
@@ -398,22 +391,20 @@ if __name__ == '__main__':
     print("=======================================================================================")
     print("============================ Visualize Q for Neural Network ===========================")
     print("=======================================================================================")
-    nn_model = load('models/neural_net_first_1.joblib')[-1]
+    nn_model = load('fqi_models/neural_net_second_1.joblib')[-1]
     visualize_Q(nn_model)
 
     print("=======================================================================================")
     print("=================== Visualize Expected Return for Linear Regression ===================")
     print("=======================================================================================")
-    linreg_model = load('models/regression_second_1.joblib')
-    print('Linear Regression list contains {} models'.format(len(linreg_model)))
+    linreg_model = load('fqi_models/regression_second_1.joblib')
     visualize_expected_return_policy(linreg_model)
 
     print("=======================================================================================")
     print("======================= Visualize Hill Trajectory for ExtraTree =======================")
     print("=======================================================================================")
-    extree_model = load('models/tree_second_2.joblib')[-1]
+    extree_model = load('fqi_models/tree_second_2.joblib')[-1]
     policy = Policy(extree_model)
     x = domain.initial_state()  # start from an initial state
     # display the trajectory created by the model on a GIF file
-    ss.visualize_policy(x, policy, 'ExtraTreeVisualization')
-    print('ExtraTreeVisualization.gif file saved.')
+    visualize_policy(x, policy, 'ExtraTreeVisualization')

@@ -104,5 +104,3 @@ def is_final_state(x):
         return True
     else:
         return False
-
-

@@ -68,13 +68,13 @@ def compare_algorithms(models_list, models_name, colors, error_threshold=0.1):
 
 if __name__ == '__main__':
     models_name = ['NN', 'LR', 'ET', 'NN', 'RBF']
-    models_path = ['models/neural_net_second_1.joblib', 'models/regression_second_1.joblib',
-                   'models/tree_second_1.joblib', 'parametric_models/NeuralNet.joblib', 'parametric_models/RBFN.joblib']
+    models_path = ['fqi_models/neural_net_second_1.joblib', 'fqi_models/regression_second_1.joblib',
+                   'fqi_models/tree_second_1.joblib', 'parametric_models/NeuralNet.joblib', 'parametric_models/RBFN.joblib']
     colors = ['blue', 'blue', 'blue', 'red', 'red']  # FQI = blue  |  Parametric Q-learning = red
 
     models = []
     for name in models_path:
-        if name[:6] == 'models':
+        if name[:3] == 'fqi':
             models.append(load(name)[-1])
         else:
             models.append(load(name))
